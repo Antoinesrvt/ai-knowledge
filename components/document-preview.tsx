@@ -9,7 +9,7 @@ import {
   useRef,
 } from 'react';
 import { ArtifactKind, UIArtifact } from './artifact';
-import { FileIcon, FullscreenIcon, ImageIcon, LoaderIcon } from './icons';
+import { FileIcon, FullscreenIcon, ImageIcon, LoaderIcon } from 'lucide-react';
 import { cn, fetcher } from '@/lib/utils';
 import { Document } from '@/lib/db/schema';
 import { InlineDocumentSkeleton } from './document-skeleton';
@@ -93,7 +93,9 @@ export function DocumentPreview({
           content: artifact.content,
           id: artifact.documentId,
           createdAt: new Date(),
+          updatedAt: new Date(),
           userId: 'noop',
+          visibility: 'private' as const,
         }
       : null;
 

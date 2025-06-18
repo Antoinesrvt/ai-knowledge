@@ -18,7 +18,7 @@ import {
   saveMessages,
 } from '@/lib/db/queries';
 import { generateUUID, getTrailingMessageId } from '@/lib/utils';
-import { generateTitleFromUserMessage } from '../../actions';
+import { generateTitleFromUserMessage } from '../../(chat)/actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
@@ -237,6 +237,9 @@ export async function POST(request: Request) {
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
+    
+    console.error('Unexpected error in chat route:', error);
+    return new ChatSDKError('bad_request:chat').toResponse();
   }
 }
 

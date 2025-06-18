@@ -26,7 +26,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { ArrowUpIcon, StopIcon, SummarizeIcon } from './icons';
+import { ArrowUpIcon, StopCircleIcon, SquareIcon } from 'lucide-react';
 import { artifactDefinitions, ArtifactKind } from './artifact';
 import { ArtifactToolbarItem } from './create-artifact';
 import { UseChatHelpers } from '@ai-sdk/react';
@@ -223,7 +223,7 @@ const ReadingLevelSelector = ({
                 }
               }}
             >
-              {currentLevel === 2 ? <SummarizeIcon /> : <ArrowUpIcon />}
+              {currentLevel === 2 ? <SquareIcon /> : <ArrowUpIcon />}
             </motion.div>
           </TooltipTrigger>
           <TooltipContent
@@ -426,7 +426,7 @@ const PureToolbar = ({
               setMessages((messages) => messages);
             }}
           >
-            <StopIcon />
+            <StopCircleIcon />
           </motion.div>
         ) : selectedTool === 'adjust-reading-level' ? (
           <ReadingLevelSelector

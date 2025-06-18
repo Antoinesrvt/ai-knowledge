@@ -22,6 +22,7 @@ export type User = InferSelectModel<typeof user>;
 export const chat = pgTable('Chat', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   createdAt: timestamp('createdAt').notNull(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
   title: text('title').notNull(),
   userId: uuid('userId')
     .notNull()
@@ -107,11 +108,15 @@ export const document = pgTable(
   {
     id: uuid('id').notNull().defaultRandom(),
     createdAt: timestamp('createdAt').notNull(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
     title: text('title').notNull(),
     content: text('content'),
     kind: varchar('text', { enum: ['text', 'code', 'image', 'sheet'] })
       .notNull()
       .default('text'),
+    visibility: varchar('visibility', { enum: ['public', 'private'] })
+      .notNull()
+      .default('private'),
     userId: uuid('userId')
       .notNull()
       .references(() => user.id),
@@ -121,7 +126,7 @@ export const document = pgTable(
       pk: primaryKey({ columns: [table.id, table.createdAt] }),
     };
   },
-);
+  );
 
 export type Document = InferSelectModel<typeof document>;
 
@@ -168,3 +173,124 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+// Git-like Document Versioning System
+export const documentBranch = pgTable(
+  'DocumentBranch',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    documentId: uuid('documentId').notNull(),
+    documentCreatedAt: timestamp('documentCreatedAt').notNull(),
+    name: varchar('name', { length: 255 }).notNull(), // 'main', 'ai-exploration-1', etc.
+    parentBranchId: uuid('parentBranchId'),
+    createdByType: varchar('createdByType', { enum: ['user', 'ai'] }).notNull(),
+    createdById: uuid('createdById').notNull(), // user_id or message_id
+    isActive: boolean('isActive').notNull().default(true),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+  },
+  (table) => ({
+    documentRef: foreignKey({
+      columns: [table.documentId, table.documentCreatedAt],
+      foreignColumns: [document.id, document.createdAt],
+    }),
+    parentBranchRef: foreignKey({
+      columns: [table.parentBranchId],
+      foreignColumns: [table.id],
+    }),
+  }),
+);
+
+export type DocumentBranch = InferSelectModel<typeof documentBranch>;
+
+export const documentVersion = pgTable(
+  'DocumentVersion',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    branchId: uuid('branchId')
+      .notNull()
+      .references(() => documentBranch.id),
+    content: text('content').notNull(),
+    commitMessage: text('commitMessage'),
+    authorType: varchar('authorType', { enum: ['user', 'ai'] }).notNull(),
+    authorId: uuid('authorId').notNull(), // user_id or message_id
+    parentVersionId: uuid('parentVersionId'),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+  },
+  (table) => ({
+    parentVersionRef: foreignKey({
+      columns: [table.parentVersionId],
+      foreignColumns: [table.id],
+    }),
+  }),
+);
+
+export type DocumentVersion = InferSelectModel<typeof documentVersion>;
+
+export const documentMerge = pgTable('DocumentMerge', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  sourceBranchId: uuid('sourceBranchId')
+    .notNull()
+    .references(() => documentBranch.id),
+  targetBranchId: uuid('targetBranchId')
+    .notNull()
+    .references(() => documentBranch.id),
+  mergedVersionId: uuid('mergedVersionId')
+    .notNull()
+    .references(() => documentVersion.id),
+  mergedByType: varchar('mergedByType', { enum: ['user', 'ai'] }).notNull(),
+  mergedById: uuid('mergedById').notNull(),
+  mergeStrategy: varchar('mergeStrategy', { enum: ['auto', 'manual'] }).notNull().default('manual'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
+export type DocumentMerge = InferSelectModel<typeof documentMerge>;
+
+// Chat-Document Relationships
+export const chatDocument = pgTable(
+  'ChatDocument',
+  {
+    chatId: uuid('chatId')
+      .notNull()
+      .references(() => chat.id),
+    documentId: uuid('documentId').notNull(),
+    documentCreatedAt: timestamp('documentCreatedAt').notNull(),
+    branchId: uuid('branchId')
+      .references(() => documentBranch.id),
+    linkedAt: timestamp('linkedAt').notNull().defaultNow(),
+    linkType: varchar('linkType', { enum: ['created', 'referenced', 'updated'] }).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.chatId, table.documentId] }),
+    documentRef: foreignKey({
+      columns: [table.documentId, table.documentCreatedAt],
+      foreignColumns: [document.id, document.createdAt],
+    }),
+  }),
+);
+
+export type ChatDocument = InferSelectModel<typeof chatDocument>;
+
+// Branch Creation Requests (for AI permission system)
+export const branchRequest = pgTable(
+  'BranchRequest',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    documentId: uuid('documentId').notNull(),
+    documentCreatedAt: timestamp('documentCreatedAt').notNull(),
+    proposedName: varchar('proposedName', { length: 255 }).notNull(),
+    reason: text('reason'),
+    requestedByType: varchar('requestedByType', { enum: ['ai'] }).notNull(),
+    requestedById: uuid('requestedById').notNull(), // message_id
+    status: varchar('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+    respondedAt: timestamp('respondedAt'),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+  },
+  (table) => ({
+    documentRef: foreignKey({
+      columns: [table.documentId, table.documentCreatedAt],
+      foreignColumns: [document.id, document.createdAt],
+    }),
+  }),
+);
+
+export type BranchRequest = InferSelectModel<typeof branchRequest>;

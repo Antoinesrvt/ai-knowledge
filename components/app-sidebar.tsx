@@ -3,14 +3,16 @@
 import type { User } from 'next-auth';
 import { useRouter } from 'next/navigation';
 
-import { PlusIcon } from '@/components/icons';
+import { PlusIcon } from 'lucide-react';
 import { SidebarHistory } from '@/components/sidebar-history';
 import { SidebarUserNav } from '@/components/sidebar-user-nav';
+import { DocumentList } from '@/components/document-list';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   useSidebar,
@@ -60,8 +62,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarHistory user={user} />
+        <DocumentList user={user} />
       </SidebarContent>
-      <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
+      <SidebarFooter className="gap-0">
+        {user && (
+          <SidebarGroup>
+            <SidebarUserNav user={user} />
+          </SidebarGroup>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }

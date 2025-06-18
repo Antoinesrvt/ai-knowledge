@@ -24,11 +24,13 @@ export async function middleware(request: NextRequest) {
   });
 
   if (!token) {
-    const redirectUrl = encodeURIComponent(request.url);
-
-    return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
-    );
+    // Only allow access to login and register pages without authentication
+    if (['/login', '/register'].includes(pathname)) {
+      return NextResponse.next();
+    }
+    
+    // Redirect all other pages to login
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   const isGuest = guestRegex.test(token?.email ?? '');
@@ -37,13 +39,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  return NextResponse.next();
+  // Add pathname header for layout detection
+  const response = NextResponse.next();
+  response.headers.set('x-pathname', pathname);
+  return response;
 }
 
 export const config = {
   matcher: [
     '/',
     '/chat/:id',
+    '/document/:path*',
     '/api/:path*',
     '/login',
     '/register',

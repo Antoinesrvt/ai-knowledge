@@ -13,7 +13,7 @@ import {
 import { chatModels } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
-import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
+import { CheckCircleIcon, ChevronDownIcon } from 'lucide-react';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
 import type { Session } from 'next-auth';
 
@@ -22,12 +22,17 @@ export function ModelSelector({
   selectedModelId,
   className,
 }: {
-  session: Session;
+  session: Session | null;
   selectedModelId: string;
 } & React.ComponentProps<typeof Button>) {
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] =
     useOptimistic(selectedModelId);
+
+  // Handle case where session or session.user might be null
+  if (!session?.user) {
+    return null;
+  }
 
   const userType = session.user.type;
   const { availableChatModelIds } = entitlementsByUserType[userType];
@@ -93,7 +98,7 @@ export function ModelSelector({
                 </div>
 
                 <div className="text-foreground dark:text-foreground opacity-0 group-data-[active=true]/item:opacity-100">
-                  <CheckCircleFillIcon />
+                  <CheckCircleIcon />
                 </div>
               </button>
             </DropdownMenuItem>

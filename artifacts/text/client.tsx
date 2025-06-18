@@ -3,13 +3,13 @@ import { DiffView } from '@/components/diffview';
 import { DocumentSkeleton } from '@/components/document-skeleton';
 import { Editor } from '@/components/text-editor';
 import {
-  ClockRewind,
-  CopyIcon,
-  MessageIcon,
-  PenIcon,
-  RedoIcon,
-  UndoIcon,
-} from '@/components/icons';
+  RotateCcw,
+  Copy,
+  MessageSquare,
+  Pen,
+  Redo,
+  Undo,
+} from 'lucide-react';
 import { Suggestion } from '@/lib/db/schema';
 import { toast } from 'sonner';
 import { getSuggestions } from '../actions';
@@ -101,7 +101,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
   },
   actions: [
     {
-      icon: <ClockRewind size={18} />,
+      icon: <RotateCcw size={18} />,
       description: 'View changes',
       onClick: ({ handleVersionChange }) => {
         handleVersionChange('toggle');
@@ -115,7 +115,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       },
     },
     {
-      icon: <UndoIcon size={18} />,
+      icon: <Undo size={18} />,
       description: 'View Previous version',
       onClick: ({ handleVersionChange }) => {
         handleVersionChange('prev');
@@ -129,7 +129,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       },
     },
     {
-      icon: <RedoIcon size={18} />,
+      icon: <Redo size={18} />,
       description: 'View Next version',
       onClick: ({ handleVersionChange }) => {
         handleVersionChange('next');
@@ -143,7 +143,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       },
     },
     {
-      icon: <CopyIcon size={18} />,
+      icon: <Copy size={18} />,
       description: 'Copy to clipboard',
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
@@ -153,7 +153,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
   ],
   toolbar: [
     {
-      icon: <PenIcon />,
+      icon: <Pen />,
       description: 'Add final polish',
       onClick: ({ appendMessage }) => {
         appendMessage({
@@ -164,7 +164,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       },
     },
     {
-      icon: <MessageIcon />,
+      icon: <MessageSquare />,
       description: 'Request suggestions',
       onClick: ({ appendMessage }) => {
         appendMessage({

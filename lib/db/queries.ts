@@ -20,6 +20,7 @@ import {
   chat,
   type User,
   document,
+  type Document,
   type Suggestion,
   suggestion,
   message,
@@ -27,6 +28,16 @@ import {
   type DBMessage,
   type Chat,
   stream,
+  documentBranch,
+  documentVersion,
+  documentMerge,
+  chatDocument,
+  branchRequest,
+  type DocumentBranch,
+  type DocumentVersion,
+  type DocumentMerge,
+  type ChatDocument,
+  type BranchRequest,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -49,6 +60,131 @@ export async function getUser(email: string): Promise<Array<User>> {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get user by email',
+    );
+  }
+}
+
+export async function updateDocument({
+  id,
+  createdAt,
+  title,
+  content,
+  kind,
+}: {
+  id: string;
+  createdAt: Date;
+  title?: string;
+  content?: string;
+  kind?: 'text' | 'code' | 'image' | 'sheet';
+}): Promise<Document> {
+  try {
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (kind !== undefined) updateData.kind = kind;
+    updateData.updatedAt = new Date();
+
+    const [updated] = await db
+      .update(document)
+      .set(updateData)
+      .where(
+        and(
+          eq(document.id, id),
+          eq(document.createdAt, createdAt)
+        )
+      )
+      .returning();
+
+    return updated;
+  } catch (error) {
+    console.error('Error updating document:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to update document',
+    );
+  }
+}
+
+export async function getDocumentBranchById({
+  branchId,
+}: {
+  branchId: string;
+}): Promise<DocumentBranch | null> {
+  try {
+    const [branch] = await db
+      .select()
+      .from(documentBranch)
+      .where(eq(documentBranch.id, branchId))
+      .limit(1);
+
+    return branch || null;
+  } catch (error) {
+    console.error('Error getting document branch by id:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get document branch',
+    );
+  }
+}
+
+export async function getBranchRequests({
+  documentId,
+  documentCreatedAt,
+}: {
+  documentId: string;
+  documentCreatedAt: Date;
+}): Promise<BranchRequest[]> {
+  try {
+    return await db
+      .select()
+      .from(branchRequest)
+      .where(
+        and(
+          eq(branchRequest.documentId, documentId),
+          eq(branchRequest.documentCreatedAt, documentCreatedAt),
+        ),
+      )
+      .orderBy(desc(branchRequest.createdAt));
+  } catch (error) {
+    console.error('Error getting branch requests:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get branch requests',
+    );
+  }
+}
+
+export async function updateBranchRequest({
+  requestId,
+  status,
+  finalName,
+}: {
+  requestId: string;
+  status: 'approved' | 'rejected';
+  finalName?: string;
+}): Promise<BranchRequest> {
+  try {
+    const updateData: any = {
+      status,
+      respondedAt: new Date(),
+    };
+    
+    if (finalName && status === 'approved') {
+      updateData.proposedName = finalName;
+    }
+    
+    const [updated] = await db
+      .update(branchRequest)
+      .set(updateData)
+      .where(eq(branchRequest.id, requestId))
+      .returning();
+    
+    return updated;
+  } catch (error) {
+    console.error('Error updating branch request:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to update branch request',
     );
   }
 }
@@ -77,6 +213,86 @@ export async function createGuestUser() {
       'bad_request:database',
       'Failed to create guest user',
     );
+  }
+}
+
+export async function getDocuments(userId: string) {
+  try {
+    return await db
+      .select()
+      .from(document)
+      .where(eq(document.userId, userId))
+      .orderBy(desc(document.updatedAt));
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to get documents');
+  }
+}
+
+export async function getChats(userId: string) {
+  try {
+    return await db
+      .select()
+      .from(chat)
+      .where(eq(chat.userId, userId))
+      .orderBy(desc(chat.updatedAt));
+  } catch (error) {
+    console.error('Database error in getChats:', {
+      userId,
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error
+    });
+    
+    throw new ChatSDKError(
+      'bad_request:database',
+      `Failed to get chats: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
+  }
+}
+
+export async function getRecentActivity(userId: string) {
+  try {
+    const [recentDocuments, recentChats] = await Promise.all([
+      db
+        .select()
+        .from(document)
+        .where(eq(document.userId, userId))
+        .orderBy(desc(document.updatedAt))
+        .limit(5),
+      db
+        .select()
+        .from(chat)
+        .where(eq(chat.userId, userId))
+        .orderBy(desc(chat.updatedAt))
+        .limit(5)
+    ]);
+
+    return { recentDocuments, recentChats };
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to get recent activity');
+  }
+}
+
+export async function getStats(userId: string) {
+  try {
+    const [documentCount, chatCount] = await Promise.all([
+      db
+        .select({ count: count() })
+        .from(document)
+        .where(eq(document.userId, userId))
+        .then((result) => result[0]?.count ?? 0),
+      db
+        .select({ count: count() })
+        .from(chat)
+        .where(eq(chat.userId, userId))
+        .then((result) => result[0]?.count ?? 0)
+    ]);
+
+    return { documentCount, chatCount };
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to get stats');
   }
 }
 
@@ -192,9 +408,21 @@ export async function getChatsByUserId({
       hasMore,
     };
   } catch (error) {
+    console.error('Database error in getChatsByUserId:', {
+      userId: id,
+      limit,
+      startingAfter,
+      endingBefore,
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error
+    });
+    
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to get chats by user id',
+      `Failed to get chats by user id: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
   }
 }
@@ -300,6 +528,7 @@ export async function saveDocument({
         content,
         userId,
         createdAt: new Date(),
+        updatedAt: new Date(),
       })
       .returning();
   } catch (error) {
@@ -317,9 +546,18 @@ export async function getDocumentsById({ id }: { id: string }) {
 
     return documents;
   } catch (error) {
+    console.error('Database error in getDocumentsById:', {
+      id,
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error
+    });
+    
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to get documents by id',
+      `Failed to get documents: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
   }
 }
@@ -337,6 +575,21 @@ export async function getDocumentById({ id }: { id: string }) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get document by id',
+    );
+  }
+}
+
+export async function getDocumentsByUserId({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(document)
+      .where(eq(document.userId, userId))
+      .orderBy(desc(document.createdAt));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get documents by user id',
     );
   }
 }
@@ -533,6 +786,318 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get stream ids by chat id',
+    );
+  }
+}
+
+// Document Branching Functions
+
+export async function createBranchRequest({
+  documentId,
+  documentCreatedAt,
+  proposedName,
+  reason,
+  requestedById,
+}: {
+  documentId: string;
+  documentCreatedAt: Date;
+  proposedName: string;
+  reason?: string;
+  requestedById: string;
+}): Promise<BranchRequest> {
+  try {
+    const [branchReq] = await db
+      .insert(branchRequest)
+      .values({
+        id: generateUUID(),
+        documentId,
+        documentCreatedAt,
+        proposedName,
+        reason,
+        requestedByType: 'ai',
+        requestedById,
+        status: 'pending',
+        createdAt: new Date(),
+      })
+      .returning();
+    
+    return branchReq;
+  } catch (error) {
+    console.error('Error creating branch request:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create branch request',
+    );
+  }
+}
+
+export async function getBranchRequestsByDocument({
+  documentId,
+  documentCreatedAt,
+}: {
+  documentId: string;
+  documentCreatedAt: Date;
+}): Promise<BranchRequest[]> {
+  try {
+    return await db
+      .select()
+      .from(branchRequest)
+      .where(
+        and(
+          eq(branchRequest.documentId, documentId),
+          eq(branchRequest.documentCreatedAt, documentCreatedAt),
+        ),
+      )
+      .orderBy(desc(branchRequest.createdAt));
+  } catch (error) {
+    console.error('Error getting branch requests:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get branch requests',
+    );
+  }
+}
+
+export async function updateBranchRequestStatus({
+  requestId,
+  status,
+  finalName,
+}: {
+  requestId: string;
+  status: 'approved' | 'rejected';
+  finalName?: string;
+}): Promise<BranchRequest> {
+  try {
+    const updateData: any = {
+      status,
+      respondedAt: new Date(),
+    };
+    
+    if (finalName && status === 'approved') {
+      updateData.proposedName = finalName;
+    }
+    
+    const [updated] = await db
+      .update(branchRequest)
+      .set(updateData)
+      .where(eq(branchRequest.id, requestId))
+      .returning();
+    
+    return updated;
+  } catch (error) {
+    console.error('Error updating branch request status:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to update branch request status',
+    );
+  }
+}
+
+export async function createDocumentBranch({
+  id,
+  documentId,
+  documentCreatedAt,
+  name,
+  parentBranchId,
+  createdByType,
+  createdById,
+  isActive
+}: {
+  id: string
+  documentId: string
+  documentCreatedAt: Date
+  name: string
+  parentBranchId?: string | null
+  createdByType: 'user' | 'ai'
+  createdById: string
+  isActive: boolean
+}): Promise<DocumentBranch> {
+  try {
+    const [branch] = await db
+      .insert(documentBranch)
+      .values({
+        id,
+        documentId,
+        documentCreatedAt,
+        name,
+        parentBranchId,
+        createdByType,
+        createdById,
+        isActive,
+        createdAt: new Date(),
+      })
+      .returning();
+    
+    return branch;
+  } catch (error) {
+    console.error('Error creating document branch:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create document branch',
+    );
+  }
+}
+
+export async function getDocumentBranches({
+  documentId,
+  documentCreatedAt,
+}: {
+  documentId: string;
+  documentCreatedAt: Date;
+}): Promise<DocumentBranch[]> {
+  try {
+    return await db
+      .select()
+      .from(documentBranch)
+      .where(
+        and(
+          eq(documentBranch.documentId, documentId),
+          eq(documentBranch.documentCreatedAt, documentCreatedAt),
+          eq(documentBranch.isActive, true),
+        ),
+      )
+      .orderBy(desc(documentBranch.createdAt));
+  } catch (error) {
+    console.error('Error getting document branches:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get document branches',
+    );
+  }
+}
+
+export async function createDocumentVersion({
+  branchId,
+  content,
+  commitMessage,
+  authorId,
+  authorType,
+  parentVersionId,
+}: {
+  branchId: string;
+  content: string;
+  commitMessage?: string;
+  authorId: string;
+  authorType: 'user' | 'ai';
+  parentVersionId?: string;
+}): Promise<DocumentVersion> {
+  try {
+    const [version] = await db
+      .insert(documentVersion)
+      .values({
+        branchId,
+        content,
+        commitMessage,
+        authorId,
+        authorType,
+        parentVersionId,
+      })
+      .returning();
+    
+    return version;
+  } catch (error) {
+    console.error('Error creating document version:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create document version',
+    );
+  }
+}
+
+export async function getBranchVersions({
+  branchId,
+}: {
+  branchId: string;
+}): Promise<DocumentVersion[]> {
+  try {
+    return await db
+      .select()
+      .from(documentVersion)
+      .where(eq(documentVersion.branchId, branchId))
+      .orderBy(desc(documentVersion.createdAt));
+  } catch (error) {
+    console.error('Error getting branch versions:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get branch versions',
+    );
+  }
+}
+
+export async function linkChatToDocument({
+  chatId,
+  documentId,
+  documentCreatedAt,
+  branchId,
+  linkType = 'created',
+}: {
+  chatId: string;
+  documentId: string;
+  documentCreatedAt: Date;
+  branchId?: string;
+  linkType?: 'created' | 'referenced' | 'updated';
+}): Promise<ChatDocument> {
+  try {
+    const [link] = await db
+      .insert(chatDocument)
+      .values({
+        chatId,
+        documentId,
+        documentCreatedAt,
+        branchId,
+        linkType,
+      })
+      .returning();
+    
+    return link;
+  } catch (error) {
+    console.error('Error linking chat to document:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to link chat to document',
+    );
+  }
+}
+
+export async function getDocumentChats({
+  documentId,
+  documentCreatedAt,
+}: {
+  documentId: string;
+  documentCreatedAt: Date;
+}): Promise<(ChatDocument & { chat: Chat })[]> {
+  try {
+    return await db
+      .select({
+        chatId: chatDocument.chatId,
+        documentId: chatDocument.documentId,
+        documentCreatedAt: chatDocument.documentCreatedAt,
+        branchId: chatDocument.branchId,
+        linkType: chatDocument.linkType,
+        linkedAt: chatDocument.linkedAt,
+        chat: {
+          id: chat.id,
+          title: chat.title,
+          userId: chat.userId,
+          visibility: chat.visibility,
+          createdAt: chat.createdAt,
+          updatedAt: chat.updatedAt,
+        },
+      })
+      .from(chatDocument)
+      .innerJoin(chat, eq(chatDocument.chatId, chat.id))
+      .where(
+        and(
+          eq(chatDocument.documentId, documentId),
+          eq(chatDocument.documentCreatedAt, documentCreatedAt),
+        ),
+      )
+      .orderBy(desc(chatDocument.linkedAt));
+  } catch (error) {
+    console.error('Error getting document chats:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get document chats',
     );
   }
 }
