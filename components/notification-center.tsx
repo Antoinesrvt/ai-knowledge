@@ -74,37 +74,6 @@ export function NotificationCenter({ documentsCount, chatsCount }: NotificationC
 
   return (
     <div className="space-y-6">
-      {/* Workspace Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <FileText className="h-5 w-5 text-primary" />
-            </div>
-            Workspace Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-              <div className="text-2xl font-bold text-blue-600">{documentsCount}</div>
-              <div className="text-sm text-muted-foreground">Documents</div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/20">
-              <div className="text-2xl font-bold text-green-600">{chatsCount}</div>
-              <div className="text-sm text-muted-foreground">Chats</div>
-            </div>
-          </div>
-          
-          <div className="pt-2 border-t">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total Items</span>
-              <span className="font-medium">{documentsCount + chatsCount}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Notifications */}
       <Card>
         <CardHeader>

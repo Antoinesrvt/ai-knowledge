@@ -64,13 +64,6 @@
       "when": 1750275771149,
       "tag": "0008_nasty_master_mold",
       "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1750288027067,
-      "tag": "0009_bumpy_baron_strucker",
-      "breakpoints": true
     }
   ]
 }
