@@ -298,3 +298,6 @@ export const branchRequest = pgTable(
 );
 
 export type BranchRequest = InferSelectModel<typeof branchRequest>;
+
+// Re-export pending changes schema
+export { pendingChange, type PendingChange } from './schema-pending-changes';

@@ -1163,6 +1163,38 @@ export async function getChatLinkedDocument(chatId: string): Promise<Document | 
   }
 }
 
+// Get chat linked to a document by documentId and documentCreatedAt
+export async function getChatLinkedToDocument({
+  documentId,
+  documentCreatedAt
+}: {
+  documentId: string;
+  documentCreatedAt: Date;
+}): Promise<{ chatId: string } | null> {
+  try {
+    const result = await db
+      .select({
+        chatId: chatDocument.chatId,
+      })
+      .from(chatDocument)
+      .where(
+        and(
+          eq(chatDocument.documentId, documentId),
+          eq(chatDocument.documentCreatedAt, documentCreatedAt)
+        )
+      )
+      .limit(1);
+
+    return result[0] || null;
+  } catch (error) {
+    console.error('Error getting chat linked to document:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get chat linked to document',
+    );
+  }
+}
+
 // Pending Changes Functions
 export async function createPendingChange({
   documentId,

@@ -48,10 +48,10 @@ export function SplitView({
   const [isInverted, setIsInverted] = useState(false);
 
   // Custom hooks for managing document-chat linking and pending changes
-  const { linkedChatId, isLoading: isChatLoading } = useDocumentChatLink({
+  const { chatId: linkedChatId, isLoading: isLinkLoading, createAndLinkChat } = useDocumentChatLink({
     documentId: document.id,
     documentCreatedAt: document.createdAt,
-    autoCreateChat: true,
+    autoCreateChat: true
   });
 
   const { pendingChanges, acceptChange, rejectChange } = usePendingChanges({
@@ -130,7 +130,7 @@ export function SplitView({
 
   const renderChatView = () => (
     <div className="h-full">
-      {linkedChatId && !isChatLoading ? (
+      {linkedChatId && !isLinkLoading ? (
         <Chat
           key={`chat-${linkedChatId}`}
           id={linkedChatId}
@@ -146,7 +146,7 @@ export function SplitView({
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <div className="text-center">
             <MessageSquareIcon size={48} className="mx-auto mb-4 opacity-50" />
-            <p>{isChatLoading ? 'Initializing chat...' : 'Chat not available'}</p>
+            <p>{isLinkLoading ? 'Initializing chat...' : 'Chat not available'}</p>
           </div>
         </div>
       )}

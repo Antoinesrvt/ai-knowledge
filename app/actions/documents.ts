@@ -50,6 +50,54 @@ export async function createDocument(formData: FormData) {
   }
 }
 
+export async function createEmptyDocument(options?: {
+  withChat?: boolean;
+  title?: string;
+  kind?: 'text' | 'code' | 'sheet' | 'image';
+  userId?: string;
+}) {
+  const session = await auth()
+  if (!session?.user) {
+    throw new Error('Unauthorized')
+  }
+
+  try {
+    const id = generateUUID()
+    const timestamp = new Date()
+    const title = options?.title || 'Untitled Document'
+    const kind = options?.kind || 'text'
+
+    await saveDocument({
+      id,
+      title,
+      content: '',
+      kind,
+      userId: options?.userId || session.user.id,
+    })
+
+    // Optionally create and link a chat
+    if (options?.withChat) {
+      try {
+        const { createChatForDocument } = await import('./chat')
+        await createChatForDocument({
+          documentId: id,
+          documentCreatedAt: timestamp,
+          title: `Chat for ${title}`
+        })
+      } catch (chatError) {
+        console.error('Failed to create linked chat:', chatError)
+        // Don't fail the document creation if chat creation fails
+      }
+    }
+
+    revalidatePath('/documents')
+    redirect(`/document/${id}`)
+  } catch (error) {
+    console.error('Failed to create document:', error)
+    throw new Error('Failed to create document')
+  }
+}
+
 export async function updateDocument(id: string, formData: FormData) {
   const session = await auth()
   if (!session?.user) {
