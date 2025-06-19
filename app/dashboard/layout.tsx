@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { SidebarProvider } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
   title: 'Dashboard - AI Knowledge',
@@ -12,10 +11,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <SidebarProvider>
-      <div className="relative flex min-h-screen flex-col">
-        <div className="flex-1">{children}</div>
-      </div>
-    </SidebarProvider>
+    <div className="relative flex min-h-screen flex-col w-full">
+      <div className="flex-1">{children}</div>
+    </div>
   );
 }

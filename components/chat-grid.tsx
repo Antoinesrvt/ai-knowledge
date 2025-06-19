@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Search, Trash, Lock, Unlock } from 'lucide-react';
+import { MessageSquare, Search, Trash, Lock, Unlock, Calendar, Clock, Users, Eye } from 'lucide-react';
 import type { Chat } from '@/lib/db/schema';
 
 interface ChatGridProps {
@@ -82,44 +82,85 @@ export function ChatGrid({ chats }: ChatGridProps) {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAndSortedChats.map((chat) => (
-          <Card key={chat.id} className="group hover:shadow-lg transition-shadow">
-            <CardHeader className="space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium truncate flex items-center justify-between">
-                <span>{chat.title}</span>
-                {chat.visibility === 'private' ? (
-                  <Lock className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Unlock className="h-4 w-4 text-muted-foreground" />
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                <div className="flex items-center space-x-1">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="capitalize">{chat.visibility}</span>
+          <Card key={chat.id} className="group hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1 border-border/50 hover:border-primary/20">
+            <CardHeader className="space-y-3 pb-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <MessageSquare className="h-5 w-5 text-primary shrink-0" />
+                  <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
+                    {chat.title || 'Untitled Chat'}
+                  </CardTitle>
                 </div>
-                <span>•</span>
-                <span>
-                  {formatDistance(new Date(chat.createdAt), new Date(), {
-                    addSuffix: true,
-                  })}
+                <div className="flex items-center gap-1 shrink-0">
+                  {chat.visibility === 'private' ? (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Unlock className="h-4 w-4 text-green-600" />
+                  )}
+                </div>
+              </div>
+              
+              {/* Chat Preview/Description */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>Interactive conversation</span>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              {/* Metadata */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date(chat.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      {formatDistance(new Date(chat.createdAt), new Date(), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    chat.visibility === 'private' 
+                      ? 'bg-muted text-muted-foreground' 
+                      : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                  }`}>
+                    {chat.visibility}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Chat Type */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Type:</span>
+                <span className="text-xs font-medium capitalize bg-primary/10 text-primary px-2 py-1 rounded">
+                  conversation
                 </span>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between pt-4">
+            
+            <CardFooter className="flex gap-2 pt-4">
               <Button
-                variant="ghost"
-                className="hover:bg-primary/10 hover:text-primary"
+                variant="default"
+                size="sm"
+                className="flex-1 gap-2 group-hover:shadow-md transition-all"
                 onClick={() => router.push(`/chat/${chat.id}`)}
               >
+                <Eye className="h-4 w-4" />
                 Continue
               </Button>
               <Button
-                variant="ghost"
-                className="hover:bg-destructive/10 hover:text-destructive"
+                variant="outline"
+                size="sm"
+                className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-all"
                 onClick={() => handleDeleteChat(chat.id)}
               >
                 <Trash className="h-4 w-4" />

@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Search, Trash2 } from 'lucide-react';
+import { FileText, Search, Trash2, Lock, Unlock, Eye, Calendar, Clock } from 'lucide-react';
 import type { Document } from '@/lib/db/schema';
 
 interface DocumentGridProps {
@@ -82,39 +82,86 @@ export function DocumentGrid({ documents }: DocumentGridProps) {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAndSortedDocuments.map((doc) => (
-          <Card key={doc.id} className="group hover:shadow-lg transition-shadow">
-            <CardHeader className="space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium truncate">
-                {doc.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                <div className="flex items-center space-x-1">
-                  <FileText className="h-4 w-4" />
-                  <span className="capitalize">{doc.kind}</span>
+          <Card key={doc.id} className="group hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1 border-border/50 hover:border-primary/20">
+            <CardHeader className="space-y-3 pb-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <FileText className="h-5 w-5 text-primary shrink-0" />
+                  <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
+                    {doc.title || 'Untitled Document'}
+                  </CardTitle>
                 </div>
-                <span>•</span>
-                <span>
-                  {formatDistance(new Date(doc.createdAt), new Date(), {
-                    addSuffix: true,
-                  })}
+                <div className="flex items-center gap-1 shrink-0">
+                  {doc.visibility === 'private' ? (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Unlock className="h-4 w-4 text-green-600" />
+                  )}
+                </div>
+              </div>
+              
+              {/* Document Preview/Description */}
+              {doc.content && (
+                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                  {doc.content.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                </p>
+              )}
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              {/* Metadata */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      {formatDistance(new Date(doc.createdAt), new Date(), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    doc.visibility === 'private' 
+                      ? 'bg-muted text-muted-foreground' 
+                      : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                  }`}>
+                    {doc.visibility}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Document Type */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Type:</span>
+                <span className="text-xs font-medium capitalize bg-primary/10 text-primary px-2 py-1 rounded">
+                  {doc.kind || 'document'}
                 </span>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between pt-4">
+            
+            <CardFooter className="flex gap-2 pt-4">
               <Button
-                variant="ghost"
-                className="hover:bg-primary/10 hover:text-primary"
+                variant="default"
+                size="sm"
+                className="flex-1 gap-2 group-hover:shadow-md transition-all"
                 onClick={() => router.push(`/document/${doc.id}`)}
               >
+                <Eye className="h-4 w-4" />
                 Open
               </Button>
               <Button
-                variant="ghost"
-                className="hover:bg-destructive/10 hover:text-destructive"
+                variant="outline"
+                size="sm"
+                className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-all"
                 onClick={() => handleDeleteDocument(doc.id)}
               >
                 <Trash2 className="h-4 w-4" />

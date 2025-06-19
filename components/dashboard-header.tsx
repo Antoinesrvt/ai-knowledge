@@ -4,7 +4,7 @@ import { User } from 'next-auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SidebarUserNav } from '@/components/sidebar-user-nav';
+import { UserNav } from '@/components/user-nav';
 import { Search, Bell } from 'lucide-react';
 import { useState } from 'react';
 
@@ -70,7 +70,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
           </Button>
           
-          <SidebarUserNav user={user} />
+          <UserNav user={user} />
         </div>
       </div>
     </header>
