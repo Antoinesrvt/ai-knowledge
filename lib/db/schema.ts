@@ -1,4 +1,3 @@
-import type { InferSelectModel } from 'drizzle-orm';
 import {
   pgTable,
   varchar,
@@ -10,6 +9,7 @@ import {
   foreignKey,
   boolean,
 } from 'drizzle-orm/pg-core';
+import { InferSelectModel } from 'drizzle-orm';
 
 export const user = pgTable('User', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -30,6 +30,8 @@ export const chat = pgTable('Chat', {
   visibility: varchar('visibility', { enum: ['public', 'private'] })
     .notNull()
     .default('private'),
+  linkedDocumentId: uuid('linkedDocumentId'),
+  linkedDocumentCreatedAt: timestamp('linkedDocumentCreatedAt'),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -120,6 +122,8 @@ export const document = pgTable(
     userId: uuid('userId')
       .notNull()
       .references(() => user.id),
+    pendingChanges: json('pendingChanges'),
+    hasUnpushedChanges: boolean('hasUnpushedChanges').notNull().default(false),
   },
   (table) => {
     return {

@@ -6,13 +6,21 @@ import { RecentActivity } from '@/components/recent-activity';
 import { NotificationCenter } from '@/components/notification-center';
 import { CentralSearchBar } from '@/components/central-search-bar';
 import { getDocuments, getChats } from '@/lib/db/queries';
+import { canAccessDashboard, isGuestUser } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function DashboardPage() {
   const session = await auth();
+  
+  // Block unauthenticated users
   if (!session?.user) {
+    redirect('/login');
+  }
+  
+  // Block guest users from dashboard
+  if (!canAccessDashboard(session)) {
     redirect('/login');
   }
 

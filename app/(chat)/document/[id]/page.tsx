@@ -1,7 +1,9 @@
-import { auth } from '@/app/(auth)/auth';
 import { notFound, redirect } from 'next/navigation';
+import { auth } from '@/app/(auth)/auth';
 import { getDocumentsById } from '@/lib/db/queries';
 import { DocumentView } from '@/components/document-view';
+import { canAccessContent, getUserType } from '@/lib/auth-utils';
+import { GuestAccessBanner } from '@/components/guest-access-banner';
 
 interface DocumentPageProps {
   params: {
@@ -11,11 +13,6 @@ interface DocumentPageProps {
 
 export default async function DocumentPage({ params }: DocumentPageProps) {
   const session = await auth();
-
-  if (!session?.user) {
-    redirect('/login');
-  }
-
   const { id } = await params;
   const documents = await getDocumentsById({ id });
   const document = documents[0];
@@ -24,18 +21,32 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
     notFound();
   }
 
-  // Check if user has access to private documents
-  if (document.visibility === 'private' && document.userId !== session.user.id) {
+  // Check if user can access this document
+  if (!canAccessContent(session, document.visibility, document.userId)) {
     notFound();
   }
 
+  const userType = getUserType(session);
+  const isOwner = session?.user?.id === document.userId;
+  const isReadOnly = !session?.user || !isOwner;
+
   return (
-    <div className="flex flex-col h-screen">
-      <DocumentView 
-        document={document} 
-        userId={session.user.id}
-        isOwner={document.userId === session.user.id}
+    <div className="h-full flex flex-col">
+      <GuestAccessBanner 
+        userType={userType} 
+        contentType="document" 
+        className="mx-4 mt-4" 
       />
+      <div className="flex-1">
+        <DocumentView
+          document={document}
+          userId={session?.user?.id || ''}
+          isOwner={isOwner}
+          session={session}
+          isReadOnly={isReadOnly}
+          userType={userType}
+        />
+      </div>
     </div>
   );
 }

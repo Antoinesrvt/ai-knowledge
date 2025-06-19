@@ -5,22 +5,33 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Document } from '@/lib/db/schema';
-import type { User } from 'next-auth';
+import type { User, Session } from 'next-auth';
 import { ArrowLeftIcon, TrashIcon } from 'lucide-react';
 import { SplitView } from '@/components/split-view';
+import type { UserType } from '@/lib/auth-utils';
 
 interface DocumentViewProps {
   document: Document;
   userId: string;
   isOwner: boolean;
+  session?: Session | null;
+  isReadOnly?: boolean;
+  userType?: UserType;
 }
 
-export function DocumentView({ document, userId, isOwner }: DocumentViewProps) {
+export function DocumentView({ 
+  document, 
+  userId, 
+  isOwner, 
+  session, 
+  isReadOnly = false,
+  userType = 'unauthenticated'
+}: DocumentViewProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSave = async (title: string, content: string) => {
-    if (!isOwner) {
+    if (!isOwner || isReadOnly) {
       toast.error('You do not have permission to edit this document');
       return;
     }
@@ -51,7 +62,7 @@ export function DocumentView({ document, userId, isOwner }: DocumentViewProps) {
   };
 
   const handleDelete = async () => {
-    if (!isOwner) {
+    if (!isOwner || isReadOnly) {
       toast.error('You do not have permission to delete this document');
       return;
     }
@@ -96,6 +107,9 @@ export function DocumentView({ document, userId, isOwner }: DocumentViewProps) {
         onDelete={handleDelete}
         isDeleting={isDeleting}
         onBack={() => router.back()}
+        session={session}
+        isReadOnly={isReadOnly}
+        userType={userType}
       />
     </div>
   );

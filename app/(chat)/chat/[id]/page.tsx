@@ -1,11 +1,12 @@
-import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-
+import { cookies } from 'next/headers';
 import { auth } from '@/app/(auth)/auth';
 import { Chat } from '@/components/chat';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
+import { canAccessContent, getUserType } from '@/lib/auth-utils';
+import { GuestAccessBanner } from '@/components/guest-access-banner';
 import type { DBMessage } from '@/lib/db/schema';
 import type { Attachment, UIMessage } from 'ai';
 
@@ -20,19 +21,14 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   const session = await auth();
 
-  if (!session?.user) {
-    redirect('/login');
+  // Check if user can access this chat
+  if (!canAccessContent(session, chat.visibility, chat.userId)) {
+    notFound();
   }
 
-  if (chat.visibility === 'private') {
-    if (!session.user) {
-      return notFound();
-    }
-
-    if (session.user.id !== chat.userId) {
-      return notFound();
-    }
-  }
+  const userType = getUserType(session);
+  const isOwner = session?.user?.id === chat.userId;
+  const isReadonly = !session?.user || !isOwner;
 
   const messagesFromDb = await getMessagesByChatId({
     id,
@@ -62,9 +58,10 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           initialMessages={convertToUIMessages(messagesFromDb)}
           initialChatModel={DEFAULT_CHAT_MODEL}
           initialVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
+          isReadonly={isReadonly}
           session={session}
           autoResume={true}
+          userType={userType}
         />
         <DataStreamHandler id={id} />
       </>
@@ -72,17 +69,25 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   }
 
   return (
-    <>
-      <Chat
-        id={chat.id}
-        initialMessages={convertToUIMessages(messagesFromDb)}
-        initialChatModel={chatModelFromCookie.value}
-        initialVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
-        session={session}
-        autoResume={true}
+    <div className="h-full flex flex-col">
+      <GuestAccessBanner 
+        userType={userType} 
+        contentType="chat" 
+        className="mx-4 mt-4" 
       />
+      <div className="flex-1">
+        <Chat
+          id={chat.id}
+          initialMessages={convertToUIMessages(messagesFromDb)}
+          initialChatModel={chatModelFromCookie.value}
+          initialVisibilityType={chat.visibility}
+          isReadonly={isReadonly}
+          session={session}
+          autoResume={true}
+          userType={userType}
+        />
+      </div>
       <DataStreamHandler id={id} />
-    </>
+    </div>
   );
 }

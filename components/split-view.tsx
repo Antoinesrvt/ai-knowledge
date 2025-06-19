@@ -5,10 +5,14 @@ import { PanelResizeHandle, Panel, PanelGroup } from 'react-resizable-panels';
 import { Button } from '@/components/ui/button';
 import { TiptapEditor } from '@/components/tiptap-editor';
 import { Chat } from '@/components/chat';
-import { FileIcon, MessageSquareIcon, SplitIcon, ArrowLeftIcon, TrashIcon } from 'lucide-react';
+import { FileIcon, MessageSquareIcon, SplitIcon, ArrowLeftIcon, TrashIcon, CheckIcon, XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { User } from 'next-auth';
 import type { Document } from '@/lib/db/schema';
+import { usePendingChanges } from '@/hooks/use-pending-changes';
+import { useDocumentChatLink } from '@/hooks/use-document-chat-link';
+import { GuestAccessBanner } from '@/components/guest-access-banner';
+import type { UserType } from '@/lib/auth-utils';
 
 interface SplitViewProps {
   document: Document;
@@ -18,17 +22,50 @@ interface SplitViewProps {
   onDelete?: () => Promise<void>;
   isDeleting?: boolean;
   onBack?: () => void;
+  session?: any;
+  isReadOnly?: boolean;
+  userType?: UserType;
 }
 
 type ViewMode = 'document' | 'chat' | 'split';
 
-export function SplitView({ document, userId, isOwner, onSave, onDelete, isDeleting = false, onBack }: SplitViewProps) {
+export function SplitView({ 
+  document, 
+  userId, 
+  isOwner, 
+  onSave, 
+  onDelete, 
+  isDeleting = false, 
+  onBack, 
+  session,
+  isReadOnly = false,
+  userType = 'unauthenticated'
+}: SplitViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('document');
   const [title, setTitle] = useState(document.title);
   const [content, setContent] = useState(document.content || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isInverted, setIsInverted] = useState(false);
+
+  // Custom hooks for managing document-chat linking and pending changes
+  const { linkedChatId, isLoading: isChatLoading } = useDocumentChatLink({
+    documentId: document.id,
+    documentCreatedAt: document.createdAt,
+    autoCreateChat: true,
+  });
+
+  const { pendingChanges, acceptChange, rejectChange } = usePendingChanges({
+    documentId: document.id,
+    documentCreatedAt: document.createdAt,
+    onContentUpdate: setContent,
+  });
+
+
 
   const handleSave = async () => {
+    if (isReadOnly) {
+      return;
+    }
     setIsSaving(true);
     try {
       await onSave(title, content);
@@ -37,15 +74,55 @@ export function SplitView({ document, userId, isOwner, onSave, onDelete, isDelet
     }
   };
 
+
+
   const renderDocumentView = () => (
     <div className="flex flex-col h-full bg-background">
+      {/* Pending Changes Bar */}
+      {pendingChanges.length > 0 && (
+        <div className="border-b bg-yellow-50 dark:bg-yellow-900/20 p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                {pendingChanges.length} pending change{pendingChanges.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {pendingChanges.map((change) => (
+                <div key={change.id} className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded px-2 py-1 border">
+                  <span className="text-xs text-muted-foreground truncate max-w-32">
+                    {change.description}
+                  </span>
+                  <Button
+                     size="sm"
+                     variant="ghost"
+                     onClick={() => acceptChange(change.id)}
+                     className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/20"
+                   >
+                     <CheckIcon size={12} />
+                   </Button>
+                   <Button
+                     size="sm"
+                     variant="ghost"
+                     onClick={() => rejectChange(change.id)}
+                     className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20"
+                   >
+                     <XIcon size={12} />
+                   </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex-1 overflow-auto">
         <TiptapEditor
           content={content}
-          onChange={isOwner ? setContent : () => {}}
-          placeholder={isOwner ? "Start writing your document..." : "This document is read-only"}
+          onChange={isOwner && !isReadOnly ? setContent : () => {}}
+          placeholder={isOwner && !isReadOnly ? "Start writing your document..." : "This document is read-only"}
           className="min-h-full py-8"
-          editable={isOwner}
+          editable={isOwner && !isReadOnly}
         />
       </div>
     </div>
@@ -53,16 +130,26 @@ export function SplitView({ document, userId, isOwner, onSave, onDelete, isDelet
 
   const renderChatView = () => (
     <div className="h-full">
-      <Chat
-        key={`chat-${document.id}`}
-        id={`doc-${document.id}`}
-        initialMessages={[]}
-        initialChatModel="gpt-4o-mini"
-        initialVisibilityType="private"
-        isReadonly={!isOwner}
-        session={null}
-        autoResume={false}
-      />
+      {linkedChatId && !isChatLoading ? (
+        <Chat
+          key={`chat-${linkedChatId}`}
+          id={linkedChatId}
+          initialMessages={[]}
+          initialChatModel="gpt-4o-mini"
+          initialVisibilityType="private"
+          isReadonly={!isOwner || isReadOnly}
+          session={session}
+          autoResume={false}
+          userType={userType}
+        />
+      ) : (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="text-center">
+            <MessageSquareIcon size={48} className="mx-auto mb-4 opacity-50" />
+            <p>{isChatLoading ? 'Initializing chat...' : 'Chat not available'}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -87,7 +174,7 @@ export function SplitView({ document, userId, isOwner, onSave, onDelete, isDelet
             
             {/* Smart Title Management */}
             <div className="min-w-0 flex-1">
-              {viewMode === 'document' && isOwner ? (
+              {viewMode === 'document' && isOwner && !isReadOnly ? (
                 <input
                   type="text"
                   value={title}
@@ -128,6 +215,11 @@ export function SplitView({ document, userId, isOwner, onSave, onDelete, isDelet
             >
               <FileIcon size={14} />
               <span className="hidden lg:inline">Document</span>
+              {pendingChanges.length > 0 && (
+                <span className="ml-1 bg-yellow-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {pendingChanges.length}
+                </span>
+              )}
             </Button>
             <Button
               variant={viewMode === 'chat' ? 'default' : 'ghost'}
@@ -157,7 +249,18 @@ export function SplitView({ document, userId, isOwner, onSave, onDelete, isDelet
 
           {/* Right Section: Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {viewMode === 'document' && isOwner && (
+            {viewMode === 'split' && (
+              <Button
+                onClick={() => setIsInverted(!isInverted)}
+                variant="ghost"
+                size="sm"
+                className="transition-all duration-200"
+                title="Invert panels"
+              >
+                <SplitIcon size={16} className={cn("transition-transform", isInverted && "rotate-180")} />
+              </Button>
+            )}
+            {viewMode === 'document' && isOwner && !isReadOnly && (
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
@@ -167,7 +270,7 @@ export function SplitView({ document, userId, isOwner, onSave, onDelete, isDelet
                 {isSaving ? 'Saving...' : 'Save'}
               </Button>
             )}
-            {onDelete && isOwner && (
+            {onDelete && isOwner && !isReadOnly && (
               <Button
                 onClick={onDelete}
                 disabled={isDeleting}
@@ -226,13 +329,27 @@ export function SplitView({ document, userId, isOwner, onSave, onDelete, isDelet
         {viewMode === 'chat' && renderChatView()}
         {viewMode === 'split' && (
           <PanelGroup direction="horizontal" className="h-full">
-            <Panel defaultSize={50} minSize={30}>
-              {renderDocumentView()}
-            </Panel>
-            <PanelResizeHandle className="w-2 bg-border hover:bg-muted transition-colors" />
-            <Panel defaultSize={50} minSize={30}>
-              {renderChatView()}
-            </Panel>
+            {!isInverted ? (
+              <>
+                <Panel defaultSize={50} minSize={30}>
+                  {renderDocumentView()}
+                </Panel>
+                <PanelResizeHandle className="w-2 bg-border hover:bg-muted transition-colors" />
+                <Panel defaultSize={50} minSize={30}>
+                  {renderChatView()}
+                </Panel>
+              </>
+            ) : (
+              <>
+                <Panel defaultSize={50} minSize={30}>
+                  {renderChatView()}
+                </Panel>
+                <PanelResizeHandle className="w-2 bg-border hover:bg-muted transition-colors" />
+                <Panel defaultSize={50} minSize={30}>
+                  {renderDocumentView()}
+                </Panel>
+              </>
+            )}
           </PanelGroup>
         )}
       </div>

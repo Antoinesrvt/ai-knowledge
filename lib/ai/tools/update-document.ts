@@ -1,7 +1,7 @@
 import { DataStreamWriter, tool } from 'ai';
 import { Session } from 'next-auth';
 import { z } from 'zod';
-import { getDocumentById, saveDocument } from '@/lib/db/queries';
+import { getDocumentById, createPendingChange } from '@/lib/db/queries';
 import { documentHandlersByArtifactKind } from '@/lib/artifacts/server';
 
 interface UpdateDocumentProps {
@@ -11,7 +11,7 @@ interface UpdateDocumentProps {
 
 export const updateDocument = ({ session, dataStream }: UpdateDocumentProps) =>
   tool({
-    description: 'Update a document with the given description.',
+    description: 'Propose changes to a document. Changes will be staged for user approval before being applied.',
     parameters: z.object({
       id: z.string().describe('The ID of the document to update'),
       description: z
@@ -41,11 +41,54 @@ export const updateDocument = ({ session, dataStream }: UpdateDocumentProps) =>
         throw new Error(`No document handler found for kind: ${document.kind}`);
       }
 
+      // Generate the proposed changes using the document handler
+      let proposedContent = '';
+      const mockDataStream = {
+        writeData: (data: any) => {
+          if (data.type === 'text-delta' && data.content) {
+            proposedContent += data.content;
+          }
+        },
+      } as DataStreamWriter;
+
       await documentHandler.onUpdateDocument({
         document,
         description,
-        dataStream,
+        dataStream: mockDataStream,
         session,
+      });
+
+      // Create a pending change instead of directly updating
+      const pendingChange = await createPendingChange({
+        documentId: document.id,
+        documentCreatedAt: document.createdAt,
+        changes: {
+          originalContent: document.content,
+          proposedContent,
+          diff: generateSimpleDiff(document.content || '', proposedContent),
+        },
+        description,
+        changeType: 'ai_suggestion',
+        authorType: 'ai',
+        authorId: session.user?.id || 'ai-system',
+      });
+
+      // Stream the proposed changes for preview
+      const diffData = generateSimpleDiff(document.content || '', proposedContent);
+      dataStream.writeData({
+        type: 'pending-change',
+        content: {
+          changeId: pendingChange.id,
+          description,
+          proposedContent,
+          diff: diffData.map(item => ({
+            type: item.type,
+            line: item.line || null,
+            oldLine: item.oldLine || null,
+            newLine: item.newLine || null,
+            lineNumber: item.lineNumber,
+          })),
+        },
       });
 
       dataStream.writeData({ type: 'finish', content: '' });
@@ -54,7 +97,40 @@ export const updateDocument = ({ session, dataStream }: UpdateDocumentProps) =>
         id,
         title: document.title,
         kind: document.kind,
-        content: 'The document has been updated successfully.',
+        content: `Changes proposed for "${document.title}". Review and accept/reject the changes in the document panel.`,
+        changeId: pendingChange.id,
       };
     },
   });
+
+// Simple diff generator for basic text comparison
+function generateSimpleDiff(original: string, proposed: string) {
+  const originalLines = original.split('\n');
+  const proposedLines = proposed.split('\n');
+  
+  const diff: Array<{
+    type: string;
+    line?: string;
+    oldLine?: string;
+    newLine?: string;
+    lineNumber: number;
+  }> = [];
+  const maxLines = Math.max(originalLines.length, proposedLines.length);
+  
+  for (let i = 0; i < maxLines; i++) {
+    const originalLine = originalLines[i] || '';
+    const proposedLine = proposedLines[i] || '';
+    
+    if (originalLine !== proposedLine) {
+      if (originalLine && !proposedLine) {
+        diff.push({ type: 'removed', line: originalLine, lineNumber: i + 1 });
+      } else if (!originalLine && proposedLine) {
+        diff.push({ type: 'added', line: proposedLine, lineNumber: i + 1 });
+      } else {
+        diff.push({ type: 'modified', oldLine: originalLine, newLine: proposedLine, lineNumber: i + 1 });
+      }
+    }
+  }
+  
+  return diff;
+}

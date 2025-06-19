@@ -96,6 +96,8 @@ export function DocumentPreview({
           updatedAt: new Date(),
           userId: 'noop',
           visibility: 'private' as const,
+          pendingChanges: null,
+          hasUnpushedChanges: false,
         }
       : null;
 

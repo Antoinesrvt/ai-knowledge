@@ -1,6 +1,6 @@
 {
-  "id": "396733df-79dc-454a-b3aa-759610221c41",
-  "prevId": "a3fc0e5a-4d0a-4be3-a611-2178740fd3a3",
+  "id": "8b0397ea-b12a-4915-af9b-4a3133e47faf",
+  "prevId": "396733df-79dc-454a-b3aa-759610221c41",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -135,6 +135,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'private'"
+        },
+        "linkedDocumentId": {
+          "name": "linkedDocumentId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linkedDocumentCreatedAt": {
+          "name": "linkedDocumentCreatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -308,6 +320,19 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "pendingChanges": {
+          "name": "pendingChanges",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hasUnpushedChanges": {
+          "name": "hasUnpushedChanges",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},

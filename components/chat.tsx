@@ -20,6 +20,7 @@ import { useSearchParams } from 'next/navigation';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
+import type { UserType } from '@/lib/auth-utils';
 
 export function Chat({
   id,
@@ -29,6 +30,7 @@ export function Chat({
   isReadonly,
   session,
   autoResume,
+  userType = 'unauthenticated',
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -37,6 +39,7 @@ export function Chat({
   isReadonly: boolean;
   session: Session | null;
   autoResume: boolean;
+  userType?: UserType;
 }) {
   const { mutate } = useSWRConfig();
 
