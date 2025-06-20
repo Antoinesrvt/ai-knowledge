@@ -22,11 +22,11 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   // Check if user can access this chat
-  if (!canAccessContent(session, chat.visibility, chat.userId)) {
+  if (!(await canAccessContent(chat.visibility, chat.userId, chat.organizationId ?? undefined, chat.teamId ?? undefined))) {
     notFound();
   }
 
-  const userType = getUserType(session);
+  const userType = await getUserType();
   const isOwner = session?.user?.id === chat.userId;
   const isReadonly = !session?.user || !isOwner;
 

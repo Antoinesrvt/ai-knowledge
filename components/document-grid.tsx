@@ -25,13 +25,9 @@ export function DocumentGrid({ documents }: DocumentGridProps) {
     if (!confirm('Are you sure you want to delete this document?')) return;
 
     try {
-      const response = await fetch(`/api/documents/${documentId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        router.refresh();
-      }
+      const { deleteDocumentAction } = await import('@/app/actions/documents');
+      await deleteDocumentAction(documentId);
+      router.refresh();
     } catch (error) {
       console.error('Failed to delete document:', error);
     }

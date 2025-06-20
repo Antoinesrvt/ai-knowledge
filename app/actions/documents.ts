@@ -61,13 +61,14 @@ export async function createEmptyDocument(options?: {
     throw new Error('Unauthorized')
   }
 
+  let documentId: string
+  
   try {
     const id = generateUUID()
-    const timestamp = new Date()
     const title = options?.title || 'Untitled Document'
     const kind = options?.kind || 'text'
 
-    await saveDocument({
+    const [savedDocument] = await saveDocument({
       id,
       title,
       content: '',
@@ -81,7 +82,7 @@ export async function createEmptyDocument(options?: {
         const { createChatForDocument } = await import('./chat')
         await createChatForDocument({
           documentId: id,
-          documentCreatedAt: timestamp,
+          documentCreatedAt: savedDocument.createdAt,
           title: `Chat for ${title}`
         })
       } catch (chatError) {
@@ -90,12 +91,15 @@ export async function createEmptyDocument(options?: {
       }
     }
 
+    documentId = id
     revalidatePath('/documents')
-    redirect(`/document/${id}`)
   } catch (error) {
     console.error('Failed to create document:', error)
     throw new Error('Failed to create document')
   }
+  
+  // Redirect outside try-catch to avoid catching NEXT_REDIRECT
+  redirect(`/document/${documentId}`)
 }
 
 export async function updateDocument(id: string, formData: FormData) {

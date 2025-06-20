@@ -7,7 +7,7 @@ import { TiptapEditor } from '@/components/tiptap-editor';
 import { Chat } from '@/components/chat';
 import { FileIcon, MessageSquareIcon, SplitIcon, ArrowLeftIcon, TrashIcon, CheckIcon, XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { User } from 'next-auth';
+import type { User } from '@/lib/types';
 import type { Document } from '@/lib/db/schema';
 import { usePendingChanges } from '@/hooks/use-pending-changes';
 import { useDocumentChatLink } from '@/hooks/use-document-chat-link';

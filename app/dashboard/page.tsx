@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   }
   
   // Block guest users from dashboard
-  if (!canAccessDashboard(session)) {
+  if (!(await canAccessDashboard())) {
     redirect('/login');
   }
 

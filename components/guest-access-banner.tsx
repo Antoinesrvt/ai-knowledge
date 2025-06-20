@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { UserPlus, LogIn, Eye } from 'lucide-react';
-import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import type { UserType } from '@/lib/auth-utils';
 
 interface GuestAccessBannerProps {
@@ -13,21 +13,23 @@ interface GuestAccessBannerProps {
 }
 
 export function GuestAccessBanner({ userType, contentType, className }: GuestAccessBannerProps) {
+  const router = useRouter();
+  
   // Don't show banner for regular users
   if (userType === 'regular') {
     return null;
   }
 
   const handleSignUp = () => {
-    window.location.href = '/register';
+    router.push('/auth/signup');
   };
 
   const handleSignIn = () => {
-    window.location.href = '/login';
+    router.push('/auth/signin');
   };
 
   const handleGuestAccess = () => {
-    signIn('guest');
+    router.push('/auth/signin');
   };
 
   if (userType === 'unauthenticated') {

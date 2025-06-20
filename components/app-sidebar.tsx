@@ -1,7 +1,7 @@
 'use client';
 
-import type { User } from 'next-auth';
 import { useRouter, usePathname } from 'next/navigation';
+import type { User } from '@/lib/types';
 
 import { PlusIcon, FileTextIcon, MessageSquareIcon, LayoutDashboardIcon } from 'lucide-react';
 import { SidebarHistory } from '@/components/sidebar-history';
@@ -125,7 +125,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <SidebarFooter className="gap-0">
         {user && (
           <SidebarGroup>
-            <SidebarUserNav user={user} />
+            <SidebarUserNav />
           </SidebarGroup>
         )}
       </SidebarFooter>

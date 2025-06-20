@@ -15,16 +15,19 @@ import { cn } from '@/lib/utils';
 
 import { CheckCircleIcon, ChevronDownIcon } from 'lucide-react';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
-import type { Session } from 'next-auth';
+import type { Session, UserType } from '@/lib/types';
 
 export function ModelSelector({
-  session,
   selectedModelId,
-  className,
+  onModelChange,
+  session,
+  userType,
 }: {
-  session: Session | null;
   selectedModelId: string;
-} & React.ComponentProps<typeof Button>) {
+  onModelChange: (modelId: string) => void;
+  session: Session | null;
+  userType?: UserType;
+}) {
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] =
     useOptimistic(selectedModelId);
@@ -34,8 +37,8 @@ export function ModelSelector({
     return null;
   }
 
-  const userType = session.user.type;
-  const { availableChatModelIds } = entitlementsByUserType[userType];
+  const currentUserType = userType || 'unauthenticated';
+  const { availableChatModelIds } = entitlementsByUserType[currentUserType];
 
   const availableChatModels = chatModels.filter((chatModel) =>
     availableChatModelIds.includes(chatModel.id),
@@ -53,10 +56,7 @@ export function ModelSelector({
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
         asChild
-        className={cn(
-          'w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
-          className,
-        )}
+        className="w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
       >
         <Button
           data-testid="model-selector"

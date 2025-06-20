@@ -19,7 +19,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { User } from 'next-auth';
+import type { User } from '@/lib/types';
 
 interface DocumentListProps {
   user: User | undefined;
@@ -81,13 +81,9 @@ export function DocumentList({ user }: DocumentListProps) {
     }
 
     try {
-      const response = await fetch(`/api/documents/${documentId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        mutate();
-      }
+      const { deleteDocumentAction } = await import('@/app/actions/documents');
+      await deleteDocumentAction(documentId);
+      mutate();
     } catch (error) {
       console.error('Failed to delete document:', error);
     }

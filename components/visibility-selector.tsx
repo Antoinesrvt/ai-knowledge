@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 
-export type VisibilityType = 'private' | 'public';
+export type VisibilityType = 'private' | 'public' | 'organization' | 'team';
 
 const visibilities: Array<{
   id: VisibilityType;
@@ -35,6 +35,18 @@ const visibilities: Array<{
     id: 'public',
     label: 'Public',
     description: 'Anyone with the link can access this chat',
+    icon: <GlobeIcon />,
+  },
+  {
+    id: 'organization',
+    label: 'Organization',
+    description: 'Anyone in your organization can access this chat',
+    icon: <GlobeIcon />,
+  },
+  {
+    id: 'team',
+    label: 'Team',
+    description: 'Anyone in your team can access this chat',
     icon: <GlobeIcon />,
   },
 ];

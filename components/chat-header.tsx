@@ -10,7 +10,7 @@ import { PlusIcon } from 'lucide-react';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { type VisibilityType, VisibilitySelector } from './visibility-selector';
-import type { Session } from 'next-auth';
+import type { Session } from '@/lib/types';
 
 function PureChatHeader({
   chatId,
@@ -50,11 +50,13 @@ function PureChatHeader({
       </TooltipProvider>
 
       {!isReadonly && (
-        <ModelSelector
-          session={session}
-          selectedModelId={selectedModelId}
-          className="order-1 md:order-2"
-        />
+        <div className="order-1 md:order-2">
+          <ModelSelector
+            session={session}
+            selectedModelId={selectedModelId}
+            onModelChange={() => {}}
+          />
+        </div>
       )}
 
       {!isReadonly && (

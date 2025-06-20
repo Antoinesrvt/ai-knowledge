@@ -217,6 +217,54 @@ export async function createGuestUser() {
   }
 }
 
+export async function syncStackUser(stackUser: {
+  id: string;
+  primaryEmail: string | null;
+  displayName: string | null;
+  profileImageUrl: string | null;
+}) {
+  if (!stackUser.primaryEmail) {
+    throw new ChatSDKError('bad_request:database', 'User email is required');
+  }
+
+  try {
+    // Check if user already exists
+    const existingUser = await db
+      .select()
+      .from(user)
+      .where(eq(user.stackUserId, stackUser.id))
+      .limit(1);
+
+    if (existingUser.length > 0) {
+      // Update existing user
+      return await db
+        .update(user)
+        .set({
+          email: stackUser.primaryEmail,
+          displayName: stackUser.displayName,
+          profileImageUrl: stackUser.profileImageUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(user.stackUserId, stackUser.id))
+        .returning();
+    } else {
+      // Create new user
+      return await db
+        .insert(user)
+        .values({
+          email: stackUser.primaryEmail,
+          stackUserId: stackUser.id,
+          displayName: stackUser.displayName,
+          profileImageUrl: stackUser.profileImageUrl,
+          password: '', // Stack Auth handles authentication
+        })
+        .returning();
+    }
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to sync Stack user');
+  }
+}
+
 export async function getDocuments(userId: string) {
   try {
     return await db
@@ -512,24 +560,34 @@ export async function saveDocument({
   kind,
   content,
   userId,
+  visibility = 'private',
+  organizationId,
+  teamId,
 }: {
   id: string;
   title: string;
   kind: ArtifactKind;
   content: string;
   userId: string;
+  visibility?: 'public' | 'private' | 'organization' | 'team';
+  organizationId?: string;
+  teamId?: string;
 }) {
   try {
+    const now = new Date();
     return await db
       .insert(document)
       .values({
         id,
         title,
-        kind,
+        kind, // The schema field is named 'kind'
         content,
         userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        visibility,
+        organizationId,
+        teamId,
+        createdAt: now,
+        updatedAt: now,
       })
       .returning();
   } catch (error) {
@@ -711,7 +769,7 @@ export async function updateChatVisiblityById({
   visibility,
 }: {
   chatId: string;
-  visibility: 'private' | 'public';
+  visibility: 'private' | 'public' | 'organization' | 'team';
 }) {
   try {
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
@@ -1083,6 +1141,8 @@ export async function getDocumentChats({
           visibility: chat.visibility,
           createdAt: chat.createdAt,
           updatedAt: chat.updatedAt,
+          organizationId: chat.organizationId,
+          teamId: chat.teamId,
           linkedDocumentId: chat.linkedDocumentId,
           linkedDocumentCreatedAt: chat.linkedDocumentCreatedAt,
         },
@@ -1138,6 +1198,8 @@ export async function getChatLinkedDocument(chatId: string): Promise<Document | 
           kind: document.kind,
           visibility: document.visibility,
           userId: document.userId,
+          organizationId: document.organizationId,
+          teamId: document.teamId,
           pendingChanges: document.pendingChanges,
           hasUnpushedChanges: document.hasUnpushedChanges,
         },

@@ -7,23 +7,16 @@ interface Entitlements {
 }
 
 export const entitlementsByUserType: Record<UserType, Entitlements> = {
-  /*
-   * For users without an account
-   */
-  guest: {
-    maxMessagesPerDay: 20,
-    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+  unauthenticated: {
+    maxMessagesPerDay: 0,
+    availableChatModelIds: [],
   },
-
-  /*
-   * For users with an account
-   */
+  guest: {
+    maxMessagesPerDay: 10,
+    availableChatModelIds: ['gpt-4o-mini'],
+  },
   regular: {
     maxMessagesPerDay: 100,
-    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+    availableChatModelIds: ['gpt-4o-mini', 'gpt-4o', 'claude-3-5-sonnet-20241022'],
   },
-
-  /*
-   * TODO: For users with an account and a paid membership
-   */
 };

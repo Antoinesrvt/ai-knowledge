@@ -1,92 +1,66 @@
-import { compare } from 'bcrypt-ts';
-import NextAuth, { type DefaultSession } from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import { createGuestUser, getUser } from '@/lib/db/queries';
-import { authConfig } from './auth.config';
-import { DUMMY_PASSWORD } from '@/lib/constants';
-import type { DefaultJWT } from 'next-auth/jwt';
+import { stackServerApp } from '@/stack';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { getUserType } from '@/lib/auth-utils';
+import { syncStackUser } from '@/lib/db/queries';
+import type { UserType } from '@/lib/types';
 
-export type UserType = 'guest' | 'regular';
+export { type UserType };
 
-declare module 'next-auth' {
-  interface Session extends DefaultSession {
-    user: {
-      id: string;
-      type: UserType;
-    } & DefaultSession['user'];
+export async function auth() {
+  const stackUser = await stackServerApp.getUser();
+  
+  if (!stackUser) {
+    return { user: null };
   }
 
-  interface User {
-    id?: string;
-    email?: string | null;
-    type: UserType;
+  try {
+    // Sync Stack Auth user to local database
+    const [localUser] = await syncStackUser(stackUser);
+    
+    return {
+      user: {
+        id: localUser.id, // Use local database ID
+        email: stackUser.primaryEmail,
+        name: stackUser.displayName,
+        image: stackUser.profileImageUrl,
+        stackUserId: stackUser.id,
+      },
+    };
+  } catch (error) {
+    console.error('Failed to sync Stack user:', error);
+    // Fallback to Stack user data if sync fails
+    return {
+      user: {
+        id: stackUser.id,
+        email: stackUser.primaryEmail,
+        name: stackUser.displayName,
+        image: stackUser.profileImageUrl,
+        stackUserId: stackUser.id,
+      },
+    };
   }
 }
 
-declare module 'next-auth/jwt' {
-  interface JWT extends DefaultJWT {
-    id: string;
-    type: UserType;
-  }
+export async function signIn(provider?: string, options?: { redirectTo?: string }) {
+  // For Stack Auth, redirect to the sign-in page
+  redirect('/auth/signin');
 }
 
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
-  ...authConfig,
-  providers: [
-    Credentials({
-      credentials: {},
-      async authorize({ email, password }: any) {
-        const users = await getUser(email);
+export async function signOut(options?: { redirectTo?: string }) {
+  // For Stack Auth, we'll handle sign out on the client side
+  redirect(options?.redirectTo || '/');
+}
 
-        if (users.length === 0) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
+export async function requireAuth() {
+  const session = await auth();
+  if (!session.user) {
+    redirect('/auth/signin');
+  }
+  return session;
+}
 
-        const [user] = users;
-
-        if (!user.password) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
-
-        const passwordsMatch = await compare(password, user.password);
-
-        if (!passwordsMatch) return null;
-
-        return { ...user, type: 'regular' };
-      },
-    }),
-    Credentials({
-      id: 'guest',
-      credentials: {},
-      async authorize() {
-        const [guestUser] = await createGuestUser();
-        return { ...guestUser, type: 'guest' };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as string;
-        token.type = user.type;
-      }
-
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.type = token.type;
-      }
-
-      return session;
-    },
-  },
-});
+export async function getUserTypeFromAuth(): Promise<UserType> {
+  const headersList = await headers();
+  return await getUserType(headersList);
+}

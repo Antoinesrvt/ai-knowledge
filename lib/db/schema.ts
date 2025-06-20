@@ -8,6 +8,7 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  integer,
 } from 'drizzle-orm/pg-core';
 import { InferSelectModel } from 'drizzle-orm';
 
@@ -15,9 +16,92 @@ export const user = pgTable('User', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   email: varchar('email', { length: 64 }).notNull(),
   password: varchar('password', { length: 64 }),
+  stackUserId: varchar('stackUserId', { length: 255 }).unique(), // Stack Auth user ID
+  displayName: varchar('displayName', { length: 255 }),
+  profileImageUrl: text('profileImageUrl'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
 
+// Organizations for multi-tenancy
+export const organization = pgTable('Organization', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 100 }).notNull().unique(),
+  description: text('description'),
+  logoUrl: text('logoUrl'),
+  stackTeamId: varchar('stackTeamId', { length: 255 }).unique(), // Stack Auth team ID
+  plan: varchar('plan', { enum: ['free', 'pro', 'enterprise'] }).notNull().default('free'),
+  maxMembers: integer('maxMembers').default(5),
+  maxDocuments: integer('maxDocuments').default(100),
+  maxChats: integer('maxChats').default(500),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+// Organization memberships with roles
+export const organizationMember = pgTable(
+  'OrganizationMember',
+  {
+    id: uuid('id').notNull().defaultRandom(),
+    organizationId: uuid('organizationId')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    userId: uuid('userId')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: varchar('role', { enum: ['owner', 'admin', 'member', 'viewer'] })
+      .notNull()
+      .default('member'),
+    permissions: json('permissions'), // Custom permissions object
+    invitedAt: timestamp('invitedAt'),
+    joinedAt: timestamp('joinedAt').notNull().defaultNow(),
+    invitedBy: uuid('invitedBy').references(() => user.id),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.organizationId, table.userId] }),
+  }),
+);
+
+// Teams within organizations
+export const team = pgTable('Team', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  organizationId: uuid('organizationId')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  color: varchar('color', { length: 7 }), // Hex color code
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+// Team memberships
+export const teamMember = pgTable(
+  'TeamMember',
+  {
+    id: uuid('id').notNull().defaultRandom(),
+    teamId: uuid('teamId')
+      .notNull()
+      .references(() => team.id, { onDelete: 'cascade' }),
+    userId: uuid('userId')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: varchar('role', { enum: ['lead', 'member'] })
+      .notNull()
+      .default('member'),
+    joinedAt: timestamp('joinedAt').notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.teamId, table.userId] }),
+  }),
+);
+
 export type User = InferSelectModel<typeof user>;
+export type Organization = InferSelectModel<typeof organization>;
+export type OrganizationMember = InferSelectModel<typeof organizationMember>;
+export type Team = InferSelectModel<typeof team>;
+export type TeamMember = InferSelectModel<typeof teamMember>;
 
 export const chat = pgTable('Chat', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -27,7 +111,11 @@ export const chat = pgTable('Chat', {
   userId: uuid('userId')
     .notNull()
     .references(() => user.id),
-  visibility: varchar('visibility', { enum: ['public', 'private'] })
+  organizationId: uuid('organizationId')
+    .references(() => organization.id),
+  teamId: uuid('teamId')
+    .references(() => team.id),
+  visibility: varchar('visibility', { enum: ['public', 'private', 'organization', 'team'] })
     .notNull()
     .default('private'),
   linkedDocumentId: uuid('linkedDocumentId'),
@@ -116,12 +204,16 @@ export const document = pgTable(
     kind: varchar('text', { enum: ['text', 'code', 'image', 'sheet'] })
       .notNull()
       .default('text'),
-    visibility: varchar('visibility', { enum: ['public', 'private'] })
+    visibility: varchar('visibility', { enum: ['public', 'private', 'organization', 'team'] })
       .notNull()
       .default('private'),
     userId: uuid('userId')
       .notNull()
       .references(() => user.id),
+    organizationId: uuid('organizationId')
+      .references(() => organization.id),
+    teamId: uuid('teamId')
+      .references(() => team.id),
     pendingChanges: json('pendingChanges'),
     hasUnpushedChanges: boolean('hasUnpushedChanges').notNull().default(false),
   },

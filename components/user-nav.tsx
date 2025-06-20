@@ -2,10 +2,10 @@
 
 import { ChevronUp, LoaderIcon } from 'lucide-react';
 import Image from 'next/image';
-import type { User } from 'next-auth';
-import { signOut, useSession } from 'next-auth/react';
-import { useTheme } from 'next-themes';
+import type { User } from '@/lib/types';
+import { useUser } from '@stackframe/stack';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { toast } from './toast';
 import { guestRegex } from '@/lib/constants';
 
@@ -20,10 +20,10 @@ import { Button } from '@/components/ui/button';
 
 export function UserNav({ user }: { user: User }) {
   const router = useRouter();
-  const { data, status } = useSession();
+  const stackUser = useUser();
   const { setTheme, resolvedTheme } = useTheme();
 
-  const isGuest = guestRegex.test(data?.user?.email ?? '');
+  const isGuest = guestRegex.test(stackUser?.primaryEmail ?? '');
 
   return (
     <DropdownMenu>
@@ -89,10 +89,9 @@ export function UserNav({ user }: { user: User }) {
         <DropdownMenuItem
           data-testid="user-nav-item-sign-out"
           className="cursor-pointer"
-          onSelect={() => {
-            signOut({
-              callbackUrl: '/',
-            });
+          onSelect={async () => {
+            await stackUser?.signOut();
+            router.push('/');
             toast({
               type: 'success',
               description: 'Signed out successfully',

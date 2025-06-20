@@ -1,13 +1,13 @@
-import { getToken } from 'next-auth/jwt';
-import { guestRegex, isDevelopmentEnvironment } from './lib/constants';
+import { guestRegex } from './lib/constants';
 import { NextRequest, NextResponse } from 'next/server';
+import { stackServerApp } from './stack';
 
 // Routes that allow unauthenticated access to public content
 const PUBLIC_CONTENT_ROUTES = ['/document/', '/chat/'];
 // Routes that require regular user authentication (blocked for guests)
 const REGULAR_USER_ONLY_ROUTES = ['/dashboard'];
 // Routes that allow unauthenticated access
-const UNAUTHENTICATED_ROUTES = ['/login', '/register'];
+const UNAUTHENTICATED_ROUTES = ['/login', '/register', '/auth/signin', '/auth/signup'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,19 +24,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
-  });
+  const user = await stackServerApp.getUser();
 
-  const isGuest = token ? guestRegex.test(token?.email ?? '') : false;
+  const isGuest = user ? guestRegex.test(user?.primaryEmail ?? '') : false;
   const isPublicContentRoute = PUBLIC_CONTENT_ROUTES.some(route => pathname.startsWith(route));
   const isRegularUserOnlyRoute = REGULAR_USER_ONLY_ROUTES.some(route => pathname.startsWith(route));
   const isUnauthenticatedRoute = UNAUTHENTICATED_ROUTES.includes(pathname);
 
   // Allow unauthenticated access to login, register, and public content routes
-  if (!token) {
+  if (!user) {
     if (isUnauthenticatedRoute || isPublicContentRoute) {
       const response = NextResponse.next();
       response.headers.set('x-pathname', pathname);
@@ -45,16 +41,16 @@ export async function middleware(request: NextRequest) {
     }
     
     // Redirect all other pages to login
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
   // Block guest users from dashboard and other regular-user-only routes
   if (isGuest && isRegularUserOnlyRoute) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
   // Redirect authenticated regular users away from login/register
-  if (token && !isGuest && isUnauthenticatedRoute) {
+  if (user && !isGuest && isUnauthenticatedRoute) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
@@ -73,6 +69,7 @@ export const config = {
     '/api/:path*',
     '/login',
     '/register',
+    '/auth/:path*',
     '/dashboard/:path*',
 
     /*

@@ -1,6 +1,6 @@
 'use client';
 
-import { User } from 'next-auth';
+import type { User } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
