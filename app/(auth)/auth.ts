@@ -16,7 +16,7 @@ export async function auth() {
 
   try {
     // Sync Stack Auth user to local database
-    const [localUser] = await syncStackUser(stackUser);
+    const localUser = await syncStackUser(stackUser);
     
     return {
       user: {

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,30 +11,15 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { AlertTriangle, Building2, Shield, Users, CreditCard, Bell, Trash2 } from 'lucide-react'
+import { AlertTriangle, Building2, Shield, Users, CreditCard, Bell, Trash2, Plus, Settings, MoreVertical } from 'lucide-react'
 import { toast } from 'sonner'
+import { TeamSettingsModal } from '@/components/teams/TeamSettingsModal'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+
+import type { Organization, Team } from '@/lib/db/schema'
 
 interface OrganizationSettingsProps {
-  organization: {
-    id: string
-    name: string
-    description?: string
-    domain?: string
-    plan: 'free' | 'pro' | 'enterprise'
-    memberCount: number
-    teamCount: number
-    storageUsed: number
-    storageLimit: number
-    settings: {
-      allowGuestAccess: boolean
-      requireTwoFactor: boolean
-      allowPublicTeams: boolean
-      defaultTeamVisibility: 'private' | 'internal' | 'public'
-      autoArchiveInactiveDays: number
-      emailNotifications: boolean
-      slackIntegration: boolean
-    }
-  }
+  organization: Organization
   onUpdate: (updates: any) => Promise<void>
   onDelete: () => Promise<void>
 }
@@ -44,10 +29,55 @@ export function OrganizationSettings({ organization, onUpdate, onDelete }: Organ
   const [formData, setFormData] = useState({
     name: organization.name,
     description: organization.description || '',
-    domain: organization.domain || '',
-    ...organization.settings
+    slug: organization.slug,
+    plan: organization.plan
   })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [teams, setTeams] = useState<Team[]>([])
+  const [teamsLoading, setTeamsLoading] = useState(true)
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [showTeamSettings, setShowTeamSettings] = useState(false)
+  const [showCreateTeam, setShowCreateTeam] = useState(false)
+
+  useEffect(() => {
+    fetchTeams()
+  }, [organization.id])
+
+  const fetchTeams = async () => {
+    try {
+      setTeamsLoading(true)
+      // TODO: Replace with actual API call
+      // const response = await fetch(`/api/organizations/${organization.id}/teams`)
+      // const data = await response.json()
+      // setTeams(data.teams)
+      
+      // Mock data for now
+      setTeams([
+        {
+          id: '1',
+          organizationId: organization.id,
+          name: 'Product Team',
+          description: 'Building the next generation of AI-powered knowledge management',
+          color: '#3b82f6',
+          createdAt: new Date('2024-01-15'),
+          updatedAt: new Date('2024-01-15')
+        },
+        {
+          id: '2',
+          organizationId: organization.id,
+          name: 'Engineering',
+          description: 'Core platform development and infrastructure',
+          color: '#10b981',
+          createdAt: new Date('2024-01-14'),
+          updatedAt: new Date('2024-01-14')
+        }
+      ])
+    } catch (error) {
+      toast.error('Failed to fetch teams')
+    } finally {
+      setTeamsLoading(false)
+    }
+  }
 
   const handleSave = async () => {
     setIsLoading(true)
@@ -79,7 +109,42 @@ export function OrganizationSettings({ organization, onUpdate, onDelete }: Organ
     }
   }
 
-  const storagePercentage = (organization.storageUsed / organization.storageLimit) * 100
+  const handleCreateTeam = () => {
+    setShowCreateTeam(true)
+  }
+
+  const handleTeamSettings = (team: Team) => {
+    setSelectedTeam(team)
+    setShowTeamSettings(true)
+  }
+
+  const handleTeamUpdate = async (teamId: string, updates: Partial<Team>) => {
+    try {
+      // TODO: Replace with actual API call
+      // await updateTeam(teamId, updates)
+      setTeams(teams.map(team => 
+        team.id === teamId ? { ...team, ...updates } : team
+      ))
+      toast.success('Team updated successfully')
+      setShowTeamSettings(false)
+    } catch (error) {
+      toast.error('Failed to update team')
+    }
+  }
+
+  const handleTeamDelete = async (teamId: string) => {
+    try {
+      // TODO: Replace with actual API call
+      // await deleteTeam(teamId)
+      setTeams(teams.filter(team => team.id !== teamId))
+      toast.success('Team deleted successfully')
+      setShowTeamSettings(false)
+    } catch (error) {
+      toast.error('Failed to delete team')
+    }
+  }
+
+  // Storage information would need to be calculated separately if needed
 
   return (
     <div className="space-y-6">
@@ -96,26 +161,18 @@ export function OrganizationSettings({ organization, onUpdate, onDelete }: Organ
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             General
           </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="members" className="flex items-center gap-2">
+          <TabsTrigger value="teams" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Members
+            Teams
           </TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Billing
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notifications
+          <TabsTrigger value="danger" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Danger Zone
           </TabsTrigger>
         </TabsList>
 
@@ -128,7 +185,7 @@ export function OrganizationSettings({ organization, onUpdate, onDelete }: Organ
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Organization Name</Label>
                   <Input
@@ -139,12 +196,12 @@ export function OrganizationSettings({ organization, onUpdate, onDelete }: Organ
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="domain">Domain</Label>
+                  <Label htmlFor="slug">Organization Slug</Label>
                   <Input
-                    id="domain"
-                    value={formData.domain}
-                    onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                    placeholder="company.com"
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="organization-slug"
                   />
                 </div>
               </div>
@@ -163,244 +220,170 @@ export function OrganizationSettings({ organization, onUpdate, onDelete }: Organ
 
           <Card>
             <CardHeader>
-              <CardTitle>Team Defaults</CardTitle>
+              <CardTitle>Plan Information</CardTitle>
               <CardDescription>
-                Default settings for new teams in your organization
+                Current subscription plan for your organization
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Allow Public Teams</Label>
+                  <Label>Current Plan</Label>
                   <p className="text-sm text-muted-foreground">
-                    Allow teams to be visible to anyone on the internet
+                    Your organization's subscription level
                   </p>
                 </div>
-                <Switch
-                  checked={formData.allowPublicTeams}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, allowPublicTeams: checked })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Default Team Visibility</Label>
-                <Select
-                  value={formData.defaultTeamVisibility}
-                  onValueChange={(value: 'private' | 'internal' | 'public') => 
-                    setFormData({ ...formData, defaultTeamVisibility: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="private">Private</SelectItem>
-                    <SelectItem value="internal">Internal</SelectItem>
-                    <SelectItem value="public">Public</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Badge variant={organization.plan === 'enterprise' ? 'default' : 'secondary'}>
+                  {organization.plan.toUpperCase()}
+                </Badge>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>
-                Configure security policies for your organization
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Require Two-Factor Authentication</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Require all members to enable 2FA
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.requireTwoFactor}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, requireTwoFactor: checked })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Allow Guest Access</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow non-members to access public content
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.allowGuestAccess}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, allowGuestAccess: checked })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Auto-archive Inactive Content</Label>
-                <Select
-                  value={formData.autoArchiveInactiveDays.toString()}
-                  onValueChange={(value) => 
-                    setFormData({ ...formData, autoArchiveInactiveDays: parseInt(value) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 days</SelectItem>
-                    <SelectItem value="60">60 days</SelectItem>
-                    <SelectItem value="90">90 days</SelectItem>
-                    <SelectItem value="180">180 days</SelectItem>
-                    <SelectItem value="365">1 year</SelectItem>
-                    <SelectItem value="0">Never</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <TabsContent value="teams" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium">Teams</h3>
+              <p className="text-sm text-muted-foreground">
+                Manage teams within this organization
+              </p>
+            </div>
+            <Button onClick={handleCreateTeam} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create Team
+            </Button>
+          </div>
 
-        <TabsContent value="members" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Member Overview</CardTitle>
-              <CardDescription>
-                Current organization membership statistics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold">{organization.memberCount}</div>
-                  <div className="text-sm text-muted-foreground">Total Members</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold">{organization.teamCount}</div>
-                  <div className="text-sm text-muted-foreground">Active Teams</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="billing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Storage Usage</CardTitle>
-              <CardDescription>
-                Monitor your organization's storage consumption
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span>Used: {(organization.storageUsed / 1024 / 1024 / 1024).toFixed(2)} GB</span>
-                  <span>Limit: {(organization.storageLimit / 1024 / 1024 / 1024).toFixed(2)} GB</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full ${
-                      storagePercentage > 90 ? 'bg-red-500' : 
-                      storagePercentage > 75 ? 'bg-yellow-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min(storagePercentage, 100)}%` }}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {storagePercentage.toFixed(1)}% of storage used
+          {teamsLoading ? (
+            <div className="grid gap-4">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-3/4"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : teams.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No teams yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create your first team to start collaborating
                 </p>
-              </div>
-            </CardContent>
-          </Card>
+                <Button onClick={handleCreateTeam} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Team
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {teams.map((team) => (
+                <Card key={team.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div 
+                           className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-medium"
+                           style={{ backgroundColor: team.color || '#6366f1' }}
+                         >
+                          {team.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h4 className="font-medium">{team.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {team.description || 'No description'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          Created {new Date(team.createdAt).toLocaleDateString()}
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleTeamSettings(team)}>
+                              <Settings className="h-4 w-4 mr-2" />
+                              Settings
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
+        <TabsContent value="danger" className="space-y-6">
+          <Card className="border-destructive">
             <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Danger Zone
+              </CardTitle>
               <CardDescription>
-                Configure how your organization receives notifications
+                Permanently delete this organization and all its data
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive important updates via email
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.emailNotifications}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, emailNotifications: checked })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Slack Integration</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Send notifications to Slack channels
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.slackIntegration}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, slackIntegration: checked })
-                  }
-                />
-              </div>
+            <CardContent>
+              <Button
+                variant={showDeleteConfirm ? "destructive" : "outline"}
+                onClick={handleDelete}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {showDeleteConfirm ? 'Confirm Delete' : 'Delete Organization'}
+              </Button>
+              {showDeleteConfirm && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Click again to permanently delete this organization
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-between">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Danger Zone
-            </CardTitle>
-            <CardDescription>
-              Permanently delete this organization and all its data
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant={showDeleteConfirm ? "destructive" : "outline"}
-              onClick={handleDelete}
-              disabled={isLoading}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              {showDeleteConfirm ? 'Confirm Delete' : 'Delete Organization'}
-            </Button>
-            {showDeleteConfirm && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Click again to permanently delete this organization
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
-            {isLoading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={isLoading}>
+          {isLoading ? 'Saving...' : 'Save Changes'}
+        </Button>
       </div>
+
+      {/* Team Settings Modal */}
+      {selectedTeam && (
+        <TeamSettingsModal
+          team={selectedTeam}
+          isOpen={showTeamSettings}
+          onClose={() => {
+            setShowTeamSettings(false)
+            setSelectedTeam(null)
+          }}
+          onSuccess={() => {
+            fetchTeams()
+            setShowTeamSettings(false)
+            setSelectedTeam(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -11,28 +11,12 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-interface Team {
-  id: string;
-  name: string;
-  description?: string;
-  memberCount: number;
-  projectCount: number;
-  visibility: 'public' | 'private';
-  role: 'admin' | 'member' | 'viewer';
-  lastActivity: Date;
-  avatar?: string;
-}
+import type { Team } from '@/lib/db/schema';
 
 interface TeamSettings {
   name: string;
   description: string;
-  visibility: 'public' | 'private';
-  defaultMemberRole: 'admin' | 'member' | 'viewer';
-  allowMemberInvites: boolean;
-  requireApprovalForJoining: boolean;
-  allowGuestAccess: boolean;
-  autoArchiveInactiveDays: number;
+  color?: string;
 }
 
 interface TeamSettingsModalProps {
@@ -46,12 +30,7 @@ export function TeamSettingsModal({ team, isOpen, onClose, onSuccess }: TeamSett
   const [settings, setSettings] = useState<TeamSettings>({
     name: team.name,
     description: team.description || '',
-    visibility: team.visibility,
-    defaultMemberRole: 'member',
-    allowMemberInvites: false,
-    requireApprovalForJoining: true,
-    allowGuestAccess: false,
-    autoArchiveInactiveDays: 90
+    color: team.color || ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -68,12 +47,7 @@ export function TeamSettingsModal({ team, isOpen, onClose, onSuccess }: TeamSett
     const originalSettings = {
       name: team.name,
       description: team.description || '',
-      visibility: team.visibility,
-      defaultMemberRole: 'member' as const,
-      allowMemberInvites: false,
-      requireApprovalForJoining: true,
-      allowGuestAccess: false,
-      autoArchiveInactiveDays: 90
+      color: team.color || ''
     };
     
     setHasChanges(JSON.stringify(settings) !== JSON.stringify(originalSettings));
@@ -158,11 +132,9 @@ export function TeamSettingsModal({ team, isOpen, onClose, onSuccess }: TeamSett
 
         <CardContent className="overflow-y-auto">
           <Tabs defaultValue="general" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="permissions">Permissions</TabsTrigger>
-              <TabsTrigger value="access">Access</TabsTrigger>
-              <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              <TabsTrigger value="advanced">Danger Zone</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-6">
@@ -194,123 +166,16 @@ export function TeamSettingsModal({ team, isOpen, onClose, onSuccess }: TeamSett
                 </div>
 
                 <div>
-                  <Label htmlFor="visibility">Team Visibility</Label>
-                  <Select 
-                    value={settings.visibility} 
-                    onValueChange={(value: 'public' | 'private') => updateSetting('visibility', value)}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="private">
-                        <div className="flex items-center gap-2">
-                          <Lock className="h-4 w-4" />
-                          <div>
-                            <div className="font-medium">Private</div>
-                            <div className="text-xs text-gray-500">Only invited members can see this team</div>
-                          </div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="public">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" />
-                          <div>
-                            <div className="font-medium">Public</div>
-                            <div className="text-xs text-gray-500">Anyone in the organization can see this team</div>
-                          </div>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="permissions" className="space-y-6">
-              <div className="space-y-6">
-                <div>
-                  <Label htmlFor="default-role">Default Role for New Members</Label>
-                  <Select 
-                    value={settings.defaultMemberRole} 
-                    onValueChange={(value: 'admin' | 'member' | 'viewer') => updateSetting('defaultMemberRole', value)}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="viewer">Viewer - Read-only access</SelectItem>
-                      <SelectItem value="member">Member - Can create and edit content</SelectItem>
-                      <SelectItem value="admin">Admin - Full team management</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Allow Members to Invite Others</Label>
-                      <div className="text-sm text-gray-500">
-                        Let team members invite new people to the team
-                      </div>
-                    </div>
-                    <Switch
-                      checked={settings.allowMemberInvites}
-                      onCheckedChange={(checked) => updateSetting('allowMemberInvites', checked)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Require Approval for Joining</Label>
-                      <div className="text-sm text-gray-500">
-                        Team admins must approve new member requests
-                      </div>
-                    </div>
-                    <Switch
-                      checked={settings.requireApprovalForJoining}
-                      onCheckedChange={(checked) => updateSetting('requireApprovalForJoining', checked)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="access" className="space-y-6">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Allow Guest Access</Label>
-                    <div className="text-sm text-gray-500">
-                      Allow external collaborators to access team content
-                    </div>
-                  </div>
-                  <Switch
-                    checked={settings.allowGuestAccess}
-                    onCheckedChange={(checked) => updateSetting('allowGuestAccess', checked)}
+                  <Label htmlFor="team-color">Team Color</Label>
+                  <Input
+                    id="team-color"
+                    type="color"
+                    value={settings.color || '#3b82f6'}
+                    onChange={(e) => updateSetting('color', e.target.value)}
+                    className="mt-1 w-20 h-10"
                   />
-                </div>
-
-                <div>
-                  <Label htmlFor="auto-archive">Auto-archive Inactive Content</Label>
-                  <Select 
-                    value={settings.autoArchiveInactiveDays.toString()} 
-                    onValueChange={(value) => updateSetting('autoArchiveInactiveDays', parseInt(value))}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">After 30 days</SelectItem>
-                      <SelectItem value="60">After 60 days</SelectItem>
-                      <SelectItem value="90">After 90 days</SelectItem>
-                      <SelectItem value="180">After 6 months</SelectItem>
-                      <SelectItem value="365">After 1 year</SelectItem>
-                      <SelectItem value="0">Never</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <div className="text-xs text-gray-500 mt-1">
-                    Automatically archive documents and chats that haven't been accessed
+                    Choose a color to represent this team
                   </div>
                 </div>
               </div>

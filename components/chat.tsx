@@ -21,6 +21,7 @@ import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import type { UserType } from '@/lib/auth-utils';
+import { useOrganization } from '@/lib/contexts/organization-context';
 
 export function Chat({
   id,
@@ -42,6 +43,7 @@ export function Chat({
   userType?: UserType;
 }) {
   const { mutate } = useSWRConfig();
+  const { currentOrganization, currentTeam } = useOrganization();
 
   const { visibilityType } = useChatVisibility({
     chatId: id,
@@ -72,6 +74,8 @@ export function Chat({
       message: body.messages.at(-1),
       selectedChatModel: initialChatModel,
       selectedVisibilityType: visibilityType,
+      organizationId: currentOrganization?.id,
+      teamId: currentTeam?.id,
     }),
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));

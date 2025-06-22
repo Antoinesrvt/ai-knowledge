@@ -7,10 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, MessageSquarePlus, FileText, Sparkles, Zap } from 'lucide-react';
 import { generateUUID } from '@/lib/utils';
+import { useOrganization } from '@/lib/contexts/organization-context';
 
-export function CentralSearchBar() {
+interface CentralSearchBarProps {
+  contextType: 'personal' | 'organization' | 'team';
+  contextLabel: string;
+}
+
+export function CentralSearchBar({ contextType, contextLabel }: CentralSearchBarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const { currentOrganization, currentTeam } = useOrganization();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +45,14 @@ export function CentralSearchBar() {
             <div className="flex items-center justify-center gap-2">
               <Sparkles className="h-6 w-6 text-primary" />
               <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Welcome to AI Knowledge
+                {contextType === 'personal' ? 'Welcome to AI Knowledge' : `Welcome to ${contextLabel}`}
               </h2>
             </div>
             <p className="text-muted-foreground">
-              Search your knowledge base or start a new conversation
+              {contextType === 'personal' 
+                ? 'Search your personal knowledge base or start a new conversation'
+                : `Search ${contextLabel} knowledge base or collaborate with your team`
+              }
             </p>
           </div>
 

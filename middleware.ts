@@ -7,7 +7,7 @@ const PUBLIC_CONTENT_ROUTES = ['/document/', '/chat/'];
 // Routes that require regular user authentication (blocked for guests)
 const REGULAR_USER_ONLY_ROUTES = ['/dashboard'];
 // Routes that allow unauthenticated access
-const UNAUTHENTICATED_ROUTES = ['/login', '/register', '/auth/signin', '/auth/signup'];
+const UNAUTHENTICATED_ROUTES = ['/', '/login', '/register', '/auth/signin', '/auth/signup'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated regular users away from login/register
   if (user && !isGuest && isUnauthenticatedRoute) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // Add headers for layout detection and user type

@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, selectedChatModel, selectedVisibilityType } =
+    const { id, message, selectedChatModel, selectedVisibilityType, organizationId, teamId } =
       requestBody;
 
     const session = await auth();
@@ -105,6 +105,8 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title,
         visibility: selectedVisibilityType,
+        organizationId,
+        teamId,
       });
     } else {
       if (chat.userId !== session.user.id) {

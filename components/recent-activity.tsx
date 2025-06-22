@@ -9,21 +9,40 @@ import type { Document, Chat } from '@/lib/db/schema';
 interface RecentActivityProps {
   documents: Document[];
   chats: Chat[];
+  contextLabel?: string;
 }
 
-export function RecentActivity({ documents, chats }: RecentActivityProps) {
+export function RecentActivity({ documents, chats, contextLabel }: RecentActivityProps) {
+  const getActivityDescription = () => {
+    if (contextLabel && contextLabel !== 'Personal') {
+      return `Latest activity in ${contextLabel}`;
+    }
+    return 'Your latest work';
+  };
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold tracking-tight">Recent Activity</h2>
-        <p className="text-sm text-muted-foreground">Your latest work</p>
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight">Recent Activity</h2>
+          <p className="text-sm text-muted-foreground">{getActivityDescription()}</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>Last updated</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recent Documents */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">Recent Documents</CardTitle>
+        <Card className="transition-all hover:shadow-md">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/20">
+                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              Recent Documents
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -34,13 +53,13 @@ export function RecentActivity({ documents, chats }: RecentActivityProps) {
                   <Link
                     key={doc.id}
                     href={`/document/${doc.id}`}
-                    className="flex items-start space-x-3 group"
+                    className="flex items-start space-x-3 p-3 rounded-lg group hover:bg-muted/50 transition-all duration-200"
                   >
-                    <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                      <FileText className="h-4 w-4 text-primary" />
+                    <div className="p-2 rounded-lg bg-blue-50 group-hover:bg-blue-100 dark:bg-blue-900/20 dark:group-hover:bg-blue-900/30 transition-colors">
+                      <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1 space-y-1 overflow-hidden">
-                      <p className="font-medium leading-none truncate group-hover:text-primary transition-colors">
+                      <p className="font-medium leading-none truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {doc.title}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -57,9 +76,14 @@ export function RecentActivity({ documents, chats }: RecentActivityProps) {
         </Card>
 
         {/* Recent Chats */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">Recent Chats</CardTitle>
+        <Card className="transition-all hover:shadow-md">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/20">
+                <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              Recent Chats
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -70,13 +94,13 @@ export function RecentActivity({ documents, chats }: RecentActivityProps) {
                   <Link
                     key={chat.id}
                     href={`/chat/${chat.id}`}
-                    className="flex items-start space-x-3 group"
+                    className="flex items-start space-x-3 p-3 rounded-lg group hover:bg-muted/50 transition-all duration-200"
                   >
-                    <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                      <MessageSquare className="h-4 w-4 text-primary" />
+                    <div className="p-2 rounded-lg bg-green-50 group-hover:bg-green-100 dark:bg-green-900/20 dark:group-hover:bg-green-900/30 transition-colors">
+                      <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
                     <div className="flex-1 space-y-1 overflow-hidden">
-                      <p className="font-medium leading-none truncate group-hover:text-primary transition-colors">
+                      <p className="font-medium leading-none truncate group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                         {chat.title}
                       </p>
                       <p className="text-xs text-muted-foreground">

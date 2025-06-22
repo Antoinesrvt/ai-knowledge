@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { User } from '@/lib/types';
+import { useOrganization } from '@/lib/contexts/organization-context';
 
 interface DocumentListProps {
   user: User | undefined;
@@ -29,13 +30,30 @@ export function DocumentList({ user }: DocumentListProps) {
   const { setOpenMobile } = useSidebar();
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  const { currentOrganization, currentTeam } = useOrganization();
+
+  // Build query parameters based on current context
+  const getDocumentsUrl = () => {
+    if (!user?.id) return null;
+    
+    const params = new URLSearchParams({ userId: user.id });
+    
+    if (currentOrganization) {
+      params.append('organizationId', currentOrganization.id);
+      if (currentTeam) {
+        params.append('teamId', currentTeam.id);
+      }
+    }
+    
+    return `/api/documents?${params.toString()}`;
+  };
 
   const {
     data: documents,
     isLoading,
     mutate,
   } = useSWR<Document[]>(
-    user?.id ? `/api/documents?userId=${user.id}` : null,
+    getDocumentsUrl(),
     fetcher,
     {
       fallbackData: [],
@@ -47,16 +65,26 @@ export function DocumentList({ user }: DocumentListProps) {
 
     setIsCreating(true);
     try {
+      const documentData: any = {
+        title: 'Untitled Document',
+        content: '',
+        kind: 'text',
+      };
+
+      // Add organization and team context if available
+      if (currentOrganization) {
+        documentData.organizationId = currentOrganization.id;
+        if (currentTeam) {
+          documentData.teamId = currentTeam.id;
+        }
+      }
+
       const response = await fetch('/api/documents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          title: 'Untitled Document',
-          content: '',
-          kind: 'text',
-        }),
+        body: JSON.stringify(documentData),
       });
 
       if (response.ok) {

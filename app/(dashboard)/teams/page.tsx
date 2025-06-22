@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { TeamList } from '@/components/team/TeamList'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,16 +9,28 @@ import { Plus, Search, Filter, Users, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 // Mock data - replace with actual API calls
-const mockTeams = [
+interface MockTeam {
+  id: string;
+  name: string;
+  description: string;
+  memberCount: number;
+  projectCount: number;
+  visibility: 'public' | 'private' | 'internal';
+  lastActivity: Date;
+  role: 'admin' | 'member' | 'viewer';
+  avatar?: string;
+}
+
+const mockTeams: MockTeam[] = [
   {
     id: '1',
     name: 'Product Team',
     description: 'Building the next generation of AI-powered knowledge management',
     memberCount: 8,
     projectCount: 3,
-    visibility: 'internal' as const,
+    visibility: 'internal',
     lastActivity: new Date('2024-01-15'),
-    role: 'admin' as const,
+    role: 'admin',
     avatar: undefined
   },
   {
@@ -28,9 +39,9 @@ const mockTeams = [
     description: 'Core platform development and infrastructure',
     memberCount: 12,
     projectCount: 5,
-    visibility: 'private' as const,
+    visibility: 'private',
     lastActivity: new Date('2024-01-14'),
-    role: 'member' as const,
+    role: 'member',
     avatar: undefined
   },
   {
@@ -39,9 +50,9 @@ const mockTeams = [
     description: 'UI/UX design and component library maintenance',
     memberCount: 4,
     projectCount: 2,
-    visibility: 'internal' as const,
+    visibility: 'internal',
     lastActivity: new Date('2024-01-13'),
-    role: 'viewer' as const,
+    role: 'viewer',
     avatar: undefined
   },
   {
@@ -50,9 +61,9 @@ const mockTeams = [
     description: 'Growth, content, and community engagement',
     memberCount: 6,
     projectCount: 4,
-    visibility: 'public' as const,
+    visibility: 'public',
     lastActivity: new Date('2024-01-12'),
-    role: 'member' as const,
+    role: 'member',
     avatar: undefined
   }
 ]
@@ -60,13 +71,13 @@ const mockTeams = [
 const mockOrganization = {
   id: 'org-1',
   name: 'Acme Corporation',
-  plan: 'pro' as const,
+  plan: 'pro' as 'free' | 'pro' | 'enterprise',
   memberCount: 24,
   teamCount: 4
 }
 
 export default function TeamsPage() {
-  const [teams, setTeams] = useState(mockTeams)
+  const [teams, setTeams] = useState<MockTeam[]>(mockTeams)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterVisibility, setFilterVisibility] = useState<'all' | 'public' | 'internal' | 'private'>('all')
   const [filterRole, setFilterRole] = useState<'all' | 'admin' | 'member' | 'viewer'>('all')
@@ -97,13 +108,13 @@ export default function TeamsPage() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      const newTeam = {
+      const newTeam: MockTeam = {
         id: Date.now().toString(),
         ...teamData,
         memberCount: 1,
         projectCount: 0,
         lastActivity: new Date(),
-        role: 'admin' as const,
+        role: 'admin',
         avatar: undefined
       }
       
@@ -273,16 +284,76 @@ export default function TeamsPage() {
       </div>
 
       {/* Team List */}
-      <TeamList
-        teams={filteredTeams}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onCreateTeam={handleCreateTeam}
-        onInviteMembers={handleInviteMembers}
-        onUpdateTeam={handleUpdateTeam}
-        onDeleteTeam={handleDeleteTeam}
-        isLoading={isLoading}
-      />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Teams</h2>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              Grid
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              List
+            </Button>
+            <Button onClick={() => handleCreateTeam({
+              name: 'New Team',
+              description: 'A new team',
+              visibility: 'internal'
+            })}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Team
+            </Button>
+          </div>
+        </div>
+        
+        {isLoading ? (
+          <div className="grid gap-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-card rounded-lg border p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
+                  <div className="h-3 bg-muted rounded w-3/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
+            {filteredTeams.map((team) => (
+              <div key={team.id} className="bg-card rounded-lg border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{team.name}</h3>
+                      <Badge variant="outline" className="text-xs">
+                        {team.role}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Badge variant={team.visibility === 'public' ? 'default' : 'secondary'}>
+                    {team.visibility}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">{team.description}</p>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{team.memberCount} members</span>
+                  <span>{team.projectCount} projects</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Empty State */}
       {filteredTeams.length === 0 && (

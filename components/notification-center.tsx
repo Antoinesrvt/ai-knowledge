@@ -9,39 +9,74 @@ import { formatDistance } from 'date-fns';
 interface NotificationCenterProps {
   documentsCount: number;
   chatsCount: number;
+  contextType: 'personal' | 'organization' | 'team';
+  contextLabel: string;
 }
 
-export function NotificationCenter({ documentsCount, chatsCount }: NotificationCenterProps) {
-  // Mock notifications - in a real app, these would come from your backend
-  const notifications = [
-    {
-      id: '1',
-      type: 'share' as const,
-      title: 'Document shared with you',
-      message: 'John shared "AI Research Notes" with you',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      read: false,
-      action: 'View Document',
-    },
-    {
-      id: '2',
-      type: 'system' as const,
-      title: 'Backup completed',
-      message: 'Your documents have been successfully backed up',
-      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-      read: true,
-      action: null,
-    },
-    {
-      id: '3',
-      type: 'collaboration' as const,
-      title: 'New comment on document',
-      message: 'Sarah commented on "Project Proposal"',
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      read: false,
-      action: 'View Comment',
-    },
-  ];
+interface Notification {
+  id: string;
+  type: 'share' | 'system' | 'collaboration';
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  action: string | null;
+}
+
+export function NotificationCenter({ documentsCount, chatsCount, contextType, contextLabel }: NotificationCenterProps) {
+  // Context-aware notifications - in a real app, these would come from your backend
+  const getContextNotifications = (): Notification[] => {
+    const baseNotifications: Notification[] = [
+      {
+        id: '2',
+        type: 'system',
+        title: 'Backup completed',
+        message: `Your ${contextType === 'personal' ? 'personal' : contextLabel} content has been backed up`,
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
+        read: true,
+        action: null,
+      },
+    ];
+
+    if (contextType === 'organization' || contextType === 'team') {
+      baseNotifications.unshift(
+        {
+          id: '1',
+          type: 'share',
+          title: `Document shared in ${contextLabel}`,
+          message: `John shared "AI Research Notes" in ${contextLabel}`,
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          read: false,
+          action: 'View Document',
+        },
+        {
+          id: '3',
+          type: 'collaboration',
+          title: `New activity in ${contextLabel}`,
+          message: `Sarah commented on "Project Proposal"`,
+          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          read: false,
+          action: 'View Comment',
+        }
+      );
+    } else {
+      baseNotifications.unshift(
+        {
+          id: '1',
+          type: 'share',
+          title: 'Document shared with you',
+          message: 'John shared "Personal Notes" with you',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          read: false,
+          action: 'View Document',
+        }
+      );
+    }
+
+    return baseNotifications;
+  };
+
+  const notifications = getContextNotifications();
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

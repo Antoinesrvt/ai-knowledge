@@ -78,7 +78,9 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <Toaster position="top-center" />
-          <StackAuthProvider>{children}</StackAuthProvider>
+          <StackAuthProvider>
+            {children}
+          </StackAuthProvider>
         </ThemeProvider>
       </body>
     </html>

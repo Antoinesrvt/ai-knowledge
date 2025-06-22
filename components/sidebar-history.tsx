@@ -27,6 +27,7 @@ import { fetcher } from '@/lib/utils';
 import { ChatItem } from './sidebar-history-item';
 import useSWRInfinite from 'swr/infinite';
 import { LoaderIcon } from 'lucide-react';
+import { useOrganization } from '@/lib/contexts/organization-context';
 
 type GroupedChats = {
   today: Chat[];
@@ -79,23 +80,38 @@ const groupChatsByDate = (chats: Chat[]): GroupedChats => {
 export function getChatHistoryPaginationKey(
   pageIndex: number,
   previousPageData: ChatHistory,
+  organizationId?: string,
+  teamId?: string,
 ) {
   if (previousPageData && previousPageData.hasMore === false) {
     return null;
   }
 
-  if (pageIndex === 0) return `/api/history?limit=${PAGE_SIZE}`;
+  const params = new URLSearchParams({ limit: PAGE_SIZE.toString() });
+  
+  if (organizationId) {
+    params.append('organizationId', organizationId);
+    if (teamId) {
+      params.append('teamId', teamId);
+    }
+  }
+
+  if (pageIndex === 0) {
+    return `/api/history?${params.toString()}`;
+  }
 
   const firstChatFromPage = previousPageData.chats.at(-1);
 
   if (!firstChatFromPage) return null;
 
-  return `/api/history?ending_before=${firstChatFromPage.id}&limit=${PAGE_SIZE}`;
+  params.append('ending_before', firstChatFromPage.id);
+  return `/api/history?${params.toString()}`;
 }
 
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const { id } = useParams();
+  const { currentOrganization, currentTeam } = useOrganization();
 
   const {
     data: paginatedChatHistories,
@@ -103,9 +119,19 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     isValidating,
     isLoading,
     mutate,
-  } = useSWRInfinite<ChatHistory>(getChatHistoryPaginationKey, fetcher, {
-    fallbackData: [],
-  });
+  } = useSWRInfinite<ChatHistory>(
+    (pageIndex, previousPageData) => 
+      getChatHistoryPaginationKey(
+        pageIndex, 
+        previousPageData, 
+        currentOrganization?.id, 
+        currentTeam?.id
+      ),
+    fetcher,
+    {
+      fallbackData: [],
+    }
+  );
 
   const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
