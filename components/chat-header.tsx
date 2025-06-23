@@ -18,15 +18,40 @@ function PureChatHeader({
   selectedVisibilityType,
   isReadonly,
   session,
+  compact = false,
 }: {
   chatId: string;
   selectedModelId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   session: Session | null;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const { width: windowWidth } = useWindowSize();
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        {!isReadonly && (
+          <>
+            <ModelSelector
+              session={session}
+              selectedModelId={selectedModelId}
+              onModelChange={() => {}}
+              compact={true}
+            />
+            <VisibilitySelector
+              chatId={chatId}
+              selectedVisibilityType={selectedVisibilityType}
+              className=""
+              compact={true}
+            />
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2">

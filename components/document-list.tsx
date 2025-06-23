@@ -91,7 +91,7 @@ export function DocumentList({ user }: DocumentListProps) {
         const newDocument = await response.json();
         mutate();
         setOpenMobile(false);
-        router.push(`/document/${newDocument.id}`);
+        router.push(`/workspace/${newDocument.id}`);
       }
     } catch (error) {
       console.error('Failed to create document:', error);
@@ -165,7 +165,7 @@ export function DocumentList({ user }: DocumentListProps) {
               <SidebarMenuItem key={document.id}>
                 <SidebarMenuButton asChild>
                   <Link
-                    href={`/document/${document.id}`}
+                    href={`/workspace/${document.id}`}
                     onClick={() => setOpenMobile(false)}
                     className="flex items-center justify-between group hover:bg-muted/50 transition-all duration-200 rounded-md px-2 py-2.5 border border-transparent hover:border-border/50"
                   >

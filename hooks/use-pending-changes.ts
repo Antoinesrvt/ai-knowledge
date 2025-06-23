@@ -69,8 +69,9 @@ export function usePendingChanges({
   }, [refreshChanges]);
 
   useEffect(() => {
+    // Only refresh on mount, not on every dependency change
     refreshChanges();
-  }, [refreshChanges]);
+  }, [documentId]); // Only depend on documentId, not refreshChanges to prevent loops
 
   return {
     pendingChanges,

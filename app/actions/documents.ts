@@ -3,9 +3,9 @@
 import { auth } from '@/app/(auth)/auth'
 import {
   saveDocument,
-  getDocumentsByUserId,
+  getDocumentsForUser,
   getDocumentsById,
-  deleteDocumentsByIdAfterTimestamp,
+  deleteDocument,
   updateDocument as updateDocumentQuery
 } from '@/lib/db/queries'
 import { revalidatePath } from 'next/cache'
@@ -43,7 +43,7 @@ export async function createDocument(formData: FormData) {
 
     revalidatePath('/documents')
     revalidatePath('/dashboard')
-    redirect(`/document/${documentId}`)
+    redirect(`/workspace/${documentId}`)
   } catch (error) {
     console.error('Failed to create document:', error)
     throw new Error('Failed to create document')
@@ -99,7 +99,7 @@ export async function createEmptyDocument(options?: {
   }
   
   // Redirect outside try-catch to avoid catching NEXT_REDIRECT
-  redirect(`/document/${documentId}`)
+  redirect(`/workspace/${documentId}`)
 }
 
 export async function updateDocument(id: string, formData: FormData) {
@@ -135,7 +135,7 @@ export async function updateDocument(id: string, formData: FormData) {
       kind: document.kind
     })
 
-    revalidatePath(`/document/${id}`)
+    revalidatePath(`/workspace/${id}`)
     revalidatePath('/documents')
     revalidatePath('/dashboard')
     
@@ -143,6 +143,44 @@ export async function updateDocument(id: string, formData: FormData) {
   } catch (error) {
     console.error('Failed to update document:', error)
     throw new Error('Failed to update document')
+  }
+}
+
+export async function saveDocumentAction(id: string, title: string, content: string) {
+  const session = await auth()
+  if (!session?.user) {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if user owns the document
+  const documents = await getDocumentsById({ id })
+  const [document] = documents
+
+  if (!document) {
+    throw new Error('Document not found')
+  }
+
+  if (document.userId !== session.user.id) {
+    throw new Error('Forbidden: You can only edit your own documents')
+  }
+
+  try {
+    await updateDocumentQuery({
+      id,
+      createdAt: document.createdAt,
+      title: title || document.title,
+      content: content ?? document.content,
+      kind: document.kind
+    })
+
+    revalidatePath(`/workspace/${id}`)
+    revalidatePath('/documents')
+    revalidatePath('/dashboard')
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to save document:', error)
+    throw new Error('Failed to save document')
   }
 }
 
@@ -165,8 +203,7 @@ export async function deleteDocumentAction(id: string) {
   }
 
   try {
-    const timestamp = new Date()
-    await deleteDocumentsByIdAfterTimestamp({ id, timestamp })
+    await deleteDocument(id, session.user.id)
 
     revalidatePath('/documents')
     revalidatePath('/dashboard')
@@ -191,7 +228,7 @@ export async function getUserDocuments(userId?: string) {
   }
 
   try {
-    const documents = await getDocumentsByUserId({ userId: targetUserId })
+    const documents = await getDocumentsForUser(targetUserId)
     return documents
   } catch (error) {
     console.error('Failed to fetch documents:', error)

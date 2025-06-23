@@ -66,7 +66,7 @@ export function DocumentEditor({
       toast.success(isNew ? 'Document created successfully!' : 'Document updated successfully!');
       
       if (isNew) {
-        router.push(`/document/${savedDocument.id}`);
+        router.push(`/workspace/${savedDocument.id}`);
       }
     } catch (error) {
       console.error('Error saving document:', error);

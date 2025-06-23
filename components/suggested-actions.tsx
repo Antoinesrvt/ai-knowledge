@@ -57,7 +57,7 @@ function PureSuggestedActions({
           <Button
             variant="ghost"
             onClick={async () => {
-              window.history.replaceState({}, '', `/chat/${chatId}`);
+              // URL management handled by workspace
 
               append({
                 role: 'user',

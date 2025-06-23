@@ -120,6 +120,10 @@ export const chat = pgTable('Chat', {
     .default('private'),
   linkedDocumentId: uuid('linkedDocumentId'),
   linkedDocumentCreatedAt: timestamp('linkedDocumentCreatedAt'),
+  // New fields for workspace refactor
+  workspaceType: varchar('workspaceType', { enum: ['document', 'chat'] }),
+  primaryDocumentId: uuid('primaryDocumentId'),
+  primaryDocumentCreatedAt: timestamp('primaryDocumentCreatedAt'),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -216,6 +220,10 @@ export const document = pgTable(
       .references(() => team.id),
     pendingChanges: json('pendingChanges'),
     hasUnpushedChanges: boolean('hasUnpushedChanges').notNull().default(false),
+    // New fields for workspace refactor
+    currentMainChatId: uuid('currentMainChatId'),
+    lastViewMode: varchar('lastViewMode', { enum: ['document', 'chat', 'split'] }).default('document'),
+    lastAccessedAt: timestamp('lastAccessedAt').defaultNow(),
   },
   (table) => {
     return {
@@ -353,7 +361,7 @@ export const chatDocument = pgTable(
     branchId: uuid('branchId')
       .references(() => documentBranch.id),
     linkedAt: timestamp('linkedAt').notNull().defaultNow(),
-    linkType: varchar('linkType', { enum: ['created', 'referenced', 'updated'] }).notNull(),
+    relationshipType: varchar('relationshipType', { enum: ['main_chat', 'created', 'modified'] }).notNull(),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.chatId, table.documentId] }),
@@ -365,6 +373,30 @@ export const chatDocument = pgTable(
 );
 
 export type ChatDocument = InferSelectModel<typeof chatDocument>;
+
+// Document Main Chat tracking
+export const documentMainChat = pgTable(
+  'DocumentMainChat',
+  {
+    documentId: uuid('documentId').notNull(),
+    documentCreatedAt: timestamp('documentCreatedAt').notNull(),
+    chatId: uuid('chatId')
+      .notNull()
+      .references(() => chat.id),
+    isActive: boolean('isActive').notNull().default(true),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    deactivatedAt: timestamp('deactivatedAt'),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.documentId, table.chatId] }),
+    documentRef: foreignKey({
+      columns: [table.documentId, table.documentCreatedAt],
+      foreignColumns: [document.id, document.createdAt],
+    }),
+  }),
+);
+
+export type DocumentMainChat = InferSelectModel<typeof documentMainChat>;
 
 // Branch Creation Requests (for AI permission system)
 export const branchRequest = pgTable(

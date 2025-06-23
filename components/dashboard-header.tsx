@@ -34,18 +34,6 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             >
               Dashboard
             </Link>
-            <Link 
-              href="/documents" 
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Documents
-            </Link>
-            <Link 
-              href="/chats" 
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Chats
-            </Link>
           </nav>
         </div>
 

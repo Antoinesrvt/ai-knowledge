@@ -164,16 +164,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       href: '/dashboard',
       icon: LayoutDashboardIcon,
     },
-    {
-      title: 'Documents',
-      href: '/documents',
-      icon: FileTextIcon,
-    },
-    {
-      title: 'Chats',
-      href: '/chats',
-      icon: MessageSquareIcon,
-    },
   ];
 
   return (

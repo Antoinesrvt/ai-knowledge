@@ -8,7 +8,7 @@ import type { Document } from '@/lib/db/schema';
 import type { User } from '@/lib/types';
 import type { Session } from '@/lib/types';
 import { ArrowLeftIcon, TrashIcon } from 'lucide-react';
-import { SplitView } from '@/components/split-view';
+import { WorkspacePage } from '@/components/workspace-page';
 import type { UserType } from '@/lib/auth-utils';
 
 interface DocumentViewProps {
@@ -100,7 +100,7 @@ export function DocumentView({
 
   return (
     <div className="flex flex-col h-full">
-      <SplitView
+      <WorkspacePage
         document={document}
         userId={userId}
         isOwner={isOwner}

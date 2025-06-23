@@ -152,7 +152,7 @@ export function ChatGrid({ chats }: ChatGridProps) {
                 variant="default"
                 size="sm"
                 className="flex-1 gap-2 group-hover:shadow-md transition-all"
-                onClick={() => router.push(`/chat/${chat.id}`)}
+                onClick={() => router.push(`/workspace/${chat.id}`)}
               >
                 <Eye className="h-4 w-4" />
                 Continue

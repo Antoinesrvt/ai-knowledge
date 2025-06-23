@@ -27,7 +27,7 @@ export function QuickActions({ contextType }: QuickActionsProps) {
 
   const handleNewChat = () => {
     const chatId = generateUUID();
-    router.push(`/chat/${chatId}`);
+    router.push(`/workspace/${chatId}`);
   };
 
   const handleNewDocument = () => {

@@ -1,14 +1,9 @@
+import { db } from '@/lib/db/client';
 import { eq, and, desc } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
 import { branchRequest, documentBranch, documentVersion } from '../schema';
 import { generateUUID } from '@/lib/utils'
 import { ChatSDKError } from '@/lib/errors';
 import type { BranchRequest, DocumentBranch, DocumentVersion } from '../schema';
-
-const connectionString = process.env.POSTGRES_URL!;
-const pool = postgres(connectionString, { max: 1 });
-const db = drizzle(pool);
 
 export async function createBranchRequest({
   documentId,

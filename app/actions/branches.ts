@@ -55,7 +55,7 @@ export async function createBranch(documentId: string, formData: FormData) {
       isActive: true
     })
 
-    revalidatePath(`/document/${documentId}`)
+    revalidatePath(`/workspace/${documentId}`)
     return { success: true, branchId }
   } catch (error) {
     console.error('Failed to create branch:', error)
@@ -164,7 +164,7 @@ export async function createBranchRequestAction(formData: FormData) {
       requestedById: session.user.id
     })
 
-    revalidatePath(`/document/${documentId}`)
+    revalidatePath(`/workspace/${documentId}`)
     return { success: true, requestId }
   } catch (error) {
     console.error('Failed to create branch request:', error)

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stackServerApp } from './stack';
 
 // Routes that allow unauthenticated access to public content
-const PUBLIC_CONTENT_ROUTES = ['/document/', '/chat/'];
+const PUBLIC_CONTENT_ROUTES = ['/document/', '/chat/', '/workspace/'];
 // Routes that require regular user authentication (blocked for guests)
 const REGULAR_USER_ONLY_ROUTES = ['/dashboard'];
 // Routes that allow unauthenticated access
@@ -66,6 +66,7 @@ export const config = {
     '/',
     '/chat/:id',
     '/document/:path*',
+    '/workspace/:path*',
     '/api/:path*',
     '/login',
     '/register',

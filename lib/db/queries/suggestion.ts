@@ -1,14 +1,9 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { eq, and } from 'drizzle-orm';
-import postgres from 'postgres';
+import { db } from '@/lib/db/client';
+import { eq, and, desc } from 'drizzle-orm';
 import { suggestion, document } from '../schema';
 import { generateUUID } from '@/lib/utils';
 import { ChatSDKError } from '@/lib/errors';
 import type { Suggestion } from '../schema';
-
-const connectionString = process.env.POSTGRES_URL!;
-const pool = postgres(connectionString, { max: 1 });
-const db = drizzle(pool);
 
 export async function saveSuggestions({
   suggestions,

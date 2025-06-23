@@ -1,13 +1,8 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { db } from '@/lib/db/client';
 import { eq, and } from 'drizzle-orm';
-import postgres from 'postgres';
 import { organization, organizationMember } from '../schema';
 import { ChatSDKError } from '@/lib/errors';
 import type { Organization, OrganizationMember } from '../schema';
-
-// biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!);
-const db = drizzle(client);
 
 // Organization Management Functions
 export async function createOrganization(

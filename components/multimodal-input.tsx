@@ -110,7 +110,7 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
   const submitForm = useCallback(() => {
-    window.history.replaceState({}, '', `/chat/${chatId}`);
+    // URL management handled by workspace
 
     handleSubmit(undefined, {
       experimental_attachments: attachments,

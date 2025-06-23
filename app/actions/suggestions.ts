@@ -56,7 +56,7 @@ export async function createSuggestionAction(formData: FormData) {
     }
 
     await saveSuggestions({ suggestions: [suggestion] })
-    revalidatePath(`/document/${documentId}`)
+    revalidatePath(`/workspace/${documentId}`)
     
     return { success: true, suggestionId }
   } catch (error) {

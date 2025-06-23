@@ -4,7 +4,6 @@ import type { Attachment, UIMessage } from 'ai';
 import { useChat } from '@ai-sdk/react';
 import { useEffect, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
-import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
 import { fetcher, fetchWithErrorHandlers, generateUUID } from '@/lib/utils';
 import { Artifact } from './artifact';
@@ -23,7 +22,10 @@ import { ChatSDKError } from '@/lib/errors';
 import type { UserType } from '@/lib/auth-utils';
 import { useOrganization } from '@/lib/contexts/organization-context';
 
-export function Chat({
+/**
+ * Chat component without header - designed for use within unified workspace
+ */
+export function ChatContent({
   id,
   initialMessages,
   initialChatModel,
@@ -125,15 +127,8 @@ export function Chat({
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-dvh bg-background">
-        <ChatHeader
-          chatId={id}
-          selectedModelId={initialChatModel}
-          selectedVisibilityType={initialVisibilityType}
-          isReadonly={isReadonly}
-          session={session}
-        />
-
+      <div className="flex flex-col min-w-0 h-full bg-background">
+        {/* Messages area - no header since it's handled by parent */}
         <Messages
           chatId={id}
           status={status}
@@ -145,6 +140,7 @@ export function Chat({
           isArtifactVisible={isArtifactVisible}
         />
 
+        {/* Input area */}
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           {!isReadonly && (
             <MultimodalInput
@@ -165,6 +161,7 @@ export function Chat({
         </form>
       </div>
 
+      {/* Artifact panel */}
       <Artifact
         chatId={id}
         input={input}

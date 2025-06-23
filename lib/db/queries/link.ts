@@ -1,26 +1,21 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { db } from '@/lib/db/client';
 import { eq, and, desc } from 'drizzle-orm';
-import postgres from 'postgres';
 import { chatDocument, chat, document } from '../schema';
 import { ChatSDKError } from '@/lib/errors';
 import type { ChatDocument, Chat, Document } from '../schema';
-
-const connectionString = process.env.POSTGRES_URL!;
-const pool = postgres(connectionString, { max: 1 });
-const db = drizzle(pool);
 
 export async function linkChatToDocument({
   chatId,
   documentId,
   documentCreatedAt,
   branchId,
-  linkType = 'created',
+  relationshipType,
 }: {
   chatId: string;
   documentId: string;
   documentCreatedAt: Date;
   branchId?: string;
-  linkType?: 'created' | 'referenced' | 'updated';
+  relationshipType?: 'main_chat' | 'created' | 'modified';
 }): Promise<ChatDocument> {
   try {
     const [link] = await db
@@ -30,7 +25,7 @@ export async function linkChatToDocument({
         documentId,
         documentCreatedAt,
         branchId,
-        linkType,
+        relationshipType: relationshipType || 'created',
       })
       .returning();
     
@@ -58,7 +53,7 @@ export async function getDocumentChats({
         documentId: chatDocument.documentId,
         documentCreatedAt: chatDocument.documentCreatedAt,
         branchId: chatDocument.branchId,
-        linkType: chatDocument.linkType,
+        relationshipType: chatDocument.relationshipType,
         linkedAt: chatDocument.linkedAt,
         chat: {
           id: chat.id,
@@ -71,6 +66,9 @@ export async function getDocumentChats({
           teamId: chat.teamId,
           linkedDocumentId: chat.linkedDocumentId,
           linkedDocumentCreatedAt: chat.linkedDocumentCreatedAt,
+          workspaceType: chat.workspaceType,
+          primaryDocumentId: chat.primaryDocumentId,
+          primaryDocumentCreatedAt: chat.primaryDocumentCreatedAt,
         },
       })
       .from(chatDocument)
@@ -126,6 +124,9 @@ export async function getChatLinkedDocument(chatId: string): Promise<Document | 
           teamId: document.teamId,
           pendingChanges: document.pendingChanges,
           hasUnpushedChanges: document.hasUnpushedChanges,
+          currentMainChatId: document.currentMainChatId,
+          lastViewMode: document.lastViewMode,
+          lastAccessedAt: document.lastAccessedAt,
         },
       })
       .from(chat)

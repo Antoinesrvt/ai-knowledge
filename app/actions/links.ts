@@ -36,7 +36,7 @@ export async function linkChatToDocumentAction(formData: FormData) {
     })
     
     revalidatePath('/chat/[id]', 'page')
-    revalidatePath('/document/[id]', 'page')
+    revalidatePath('/workspace/[id]', 'page')
     revalidatePath('/dashboard')
     
     return { success: true, link }
@@ -98,7 +98,7 @@ export async function unlinkChatFromDocumentAction(formData: FormData) {
     await unlinkChatFromDocument(chatId)
     
     revalidatePath('/chat/[id]', 'page')
-    revalidatePath('/document/[id]', 'page')
+    revalidatePath('/workspace/[id]', 'page')
     revalidatePath('/dashboard')
     
     return { success: true }

@@ -22,11 +22,13 @@ export function ModelSelector({
   onModelChange,
   session,
   userType,
+  compact = false,
 }: {
   selectedModelId: string;
   onModelChange: (modelId: string) => void;
   session: Session | null;
   userType?: UserType;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] =
@@ -61,10 +63,13 @@ export function ModelSelector({
         <Button
           data-testid="model-selector"
           variant="outline"
-          className="md:px-2 md:h-[34px]"
+          className={cn(
+            "md:px-2 md:h-[34px]",
+            compact && "h-8 px-2 text-xs"
+          )}
         >
-          {selectedChatModel?.name}
-          <ChevronDownIcon />
+          {compact ? selectedChatModel?.name?.split(' ')[0] : selectedChatModel?.name}
+          <ChevronDownIcon className={compact ? "h-3 w-3" : ""} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[300px]">

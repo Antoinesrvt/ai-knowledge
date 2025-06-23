@@ -149,7 +149,7 @@ export function DocumentGrid({ documents }: DocumentGridProps) {
                 variant="default"
                 size="sm"
                 className="flex-1 gap-2 group-hover:shadow-md transition-all"
-                onClick={() => router.push(`/document/${doc.id}`)}
+                onClick={() => router.push(`/workspace/${doc.id}`)}
               >
                 <Eye className="h-4 w-4" />
                 Open

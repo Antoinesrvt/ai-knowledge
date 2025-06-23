@@ -199,7 +199,7 @@ export async function linkChatToDocumentAction(chatId: string, documentId: strin
     })
     revalidatePath('/chat')
     revalidatePath(`/chat/${chatId}`)
-    revalidatePath(`/document/${documentId}`)
+    revalidatePath(`/workspace/${documentId}`)
     
     return { success: true }
   } catch (error) {
@@ -254,7 +254,7 @@ export async function createChatForDocument({
     });
     
     // Revalidate relevant paths
-    revalidatePath(`/document/${documentId}`);
+    revalidatePath(`/workspace/${documentId}`);
     revalidatePath(`/chat/${chatId}`);
     revalidatePath('/chats');
     
@@ -358,7 +358,7 @@ export async function createDocumentForChat({
     });
     
     // Revalidate relevant paths
-    revalidatePath(`/document/${documentId}`);
+    revalidatePath(`/workspace/${documentId}`);
     revalidatePath(`/chat/${chatId}`);
     revalidatePath('/documents');
     

@@ -1,14 +1,9 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { db } from '@/lib/db/client';
 import { eq, and, or, asc, desc, inArray, gt, lt, gte, count, type SQL } from 'drizzle-orm';
 import { generateUUID } from '@/lib/utils'
 import { chat as chatTable, message as messageTable, vote, stream, organizationMember, teamMember } from '../schema';
 import type { Chat } from '../schema';
 import { ChatSDKError } from '../../errors';
-
-// biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!);
-const db = drizzle(client);
 
 // Chat Management Functions with Multi-tenant Support
 

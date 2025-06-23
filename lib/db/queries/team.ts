@@ -1,14 +1,8 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { eq, and } from 'drizzle-orm';
-import postgres from 'postgres';
-import { generateUUID } from '../../utils';
-import { team, teamMember } from '../schema';
+import { db } from '@/lib/db/client';
+import { eq, and, or, inArray } from 'drizzle-orm';
+import { team, teamMember, user, organization, organizationMember } from '../schema';
 import { ChatSDKError } from '@/lib/errors';
 import type { Team, TeamMember } from '../schema';
-
-// biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!);
-const db = drizzle(client);
 
 // Team Management Functions
 export async function createTeam(

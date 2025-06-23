@@ -1,12 +1,7 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { db } from '@/lib/db/client';
 import { eq, desc, count } from 'drizzle-orm';
-import postgres from 'postgres';
 import { document, chat } from '../schema';
 import { ChatSDKError } from '@/lib/errors';
-
-const connectionString = process.env.POSTGRES_URL!;
-const pool = postgres(connectionString, { max: 1 });
-const db = drizzle(pool);
 
 export async function getRecentActivity(userId: string) {
   try {

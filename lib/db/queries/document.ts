@@ -1,14 +1,9 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { db } from '@/lib/db/client';
 import { eq, and, or, desc, asc, inArray } from 'drizzle-orm';
-import postgres from 'postgres';
 import { document as documentTable, organization, organizationMember, team, teamMember } from '../schema';
 import { ChatSDKError } from '@/lib/errors';
 import { generateUUID } from '@/lib/utils';
 import type { Document } from '../schema';
-
-// biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!);
-const db = drizzle(client);
 
 // Document Management Functions with Multi-tenant Support
 

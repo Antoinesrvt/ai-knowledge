@@ -1,14 +1,10 @@
+import { db } from '@/lib/db/client';
 import { eq, and, asc, count } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
 import { pendingChange, document } from '../schema';
+import { generateUUID } from '@/lib/utils';
 import { ChatSDKError } from '@/lib/errors';
 import { createDocumentVersion } from './branch';
 import type { PendingChange } from '../schema';
-
-const connectionString = process.env.POSTGRES_URL!;
-const pool = postgres(connectionString, { max: 1 });
-const db = drizzle(pool);
 
 export async function createPendingChange({
   documentId,

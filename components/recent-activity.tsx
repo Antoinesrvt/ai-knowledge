@@ -52,7 +52,7 @@ export function RecentActivity({ documents, chats, contextLabel }: RecentActivit
                 documents.map((doc) => (
                   <Link
                     key={doc.id}
-                    href={`/document/${doc.id}`}
+                    href={`/workspace/${doc.id}`}
                     className="flex items-start space-x-3 p-3 rounded-lg group hover:bg-muted/50 transition-all duration-200"
                   >
                     <div className="p-2 rounded-lg bg-blue-50 group-hover:bg-blue-100 dark:bg-blue-900/20 dark:group-hover:bg-blue-900/30 transition-colors">
@@ -93,7 +93,7 @@ export function RecentActivity({ documents, chats, contextLabel }: RecentActivit
                 chats.map((chat) => (
                   <Link
                     key={chat.id}
-                    href={`/chat/${chat.id}`}
+                    href={`/workspace/${chat.id}`}
                     className="flex items-start space-x-3 p-3 rounded-lg group hover:bg-muted/50 transition-all duration-200"
                   >
                     <div className="p-2 rounded-lg bg-green-50 group-hover:bg-green-100 dark:bg-green-900/20 dark:group-hover:bg-green-900/30 transition-colors">

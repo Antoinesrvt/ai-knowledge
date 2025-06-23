@@ -1,14 +1,9 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { db } from '@/lib/db/client';
 import { eq } from 'drizzle-orm';
-import postgres from 'postgres';
 import { user } from '../schema';
 import { generateHashedPassword } from '../utils';
 import { generateUUID } from '@/lib/utils'
 import { ChatSDKError } from '@/lib/errors';
-
-const connectionString = process.env.POSTGRES_URL!;
-const pool = postgres(connectionString, { max: 1 });
-const db = drizzle(pool);
 
 export async function getUser(email: string) {
   try {

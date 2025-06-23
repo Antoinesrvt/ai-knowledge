@@ -67,6 +67,9 @@ export function useDocumentChatLink({
   useEffect(() => {
     if (!documentId || !documentCreatedAt) return;
     
+    // Prevent duplicate calls by checking if already loading or has chatId
+    if (isLoading || (chatId && !autoCreateChat)) return;
+    
     const initializeChat = async () => {
       setIsLoading(true);
       setError(null);
@@ -88,8 +91,10 @@ export function useDocumentChatLink({
       }
     };
     
-    initializeChat();
-  }, [documentId, documentCreatedAt, autoCreateChat]);
+    // Debounce the initialization to prevent rapid calls
+    const timer = setTimeout(initializeChat, 100);
+    return () => clearTimeout(timer);
+  }, [documentId, documentCreatedAt, autoCreateChat, isLoading, chatId]);
 
   return {
     chatId,

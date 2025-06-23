@@ -60,7 +60,7 @@ export async function createVersion(branchId: string, formData: FormData) {
       authorType: 'user' as const,
     })
 
-    revalidatePath(`/document/${document.id}`)
+    revalidatePath(`/workspace/${document.id}`)
     return { success: true, versionId, versionNumber }
   } catch (error) {
     console.error('Failed to create version:', error)
